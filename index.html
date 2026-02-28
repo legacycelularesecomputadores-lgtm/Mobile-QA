@@ -6,726 +6,164 @@
 <title>PhoneDiag — Diagnóstico de Hardware</title>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Syne:wght@400;700;800;900&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --bg: #080c10;
-    --bg2: #0d1218;
-    --bg3: #121820;
-    --card: #0f1520;
-    --border: #1e2d3d;
-    --accent: #00e5a0;
-    --accent2: #00b4ff;
-    --warn: #ffaa00;
-    --danger: #ff3b5c;
-    --text: #e8f0fe;
-    --muted: #5a7a9a;
-    --pass: #00e5a0;
-    --fail: #ff3b5c;
-    --skip: #5a7a9a;
-    --mono: 'JetBrains Mono', monospace;
-    --sans: 'Syne', sans-serif;
-  }
-
-  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--mono);
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
-
-  /* Grid BG */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background-image: 
-      linear-gradient(rgba(0,229,160,0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0,229,160,0.03) 1px, transparent 1px);
-    background-size: 40px 40px;
-    pointer-events: none;
-    z-index: 0;
-  }
-
-  /* SCREENS */
-  .screen { display: none; position: relative; z-index: 1; }
-  .screen.active { display: flex; flex-direction: column; min-height: 100vh; }
-
-  /* ─── SPLASH ─── */
-  #splash {
-    align-items: center;
-    justify-content: center;
-    padding: 40px 24px;
-    text-align: center;
-    gap: 0;
-  }
-
-  .logo-ring {
-    width: 120px; height: 120px;
-    border-radius: 50%;
-    border: 2px solid var(--accent);
-    display: flex; align-items: center; justify-content: center;
-    position: relative;
-    margin: 0 auto 32px;
-    animation: ring-pulse 3s ease-in-out infinite;
-    box-shadow: 0 0 40px rgba(0,229,160,0.2), inset 0 0 40px rgba(0,229,160,0.05);
-  }
-  .logo-ring::before {
-    content: '';
-    position: absolute;
-    inset: 6px;
-    border-radius: 50%;
-    border: 1px solid rgba(0,229,160,0.3);
-    animation: ring-pulse 3s ease-in-out infinite 0.5s;
-  }
-  .logo-ring svg { width: 48px; height: 48px; }
-
-  @keyframes ring-pulse {
-    0%, 100% { box-shadow: 0 0 40px rgba(0,229,160,0.2); }
-    50% { box-shadow: 0 0 60px rgba(0,229,160,0.4), 0 0 120px rgba(0,229,160,0.1); }
-  }
-
-  .logo-title {
-    font-family: var(--sans);
-    font-size: 42px;
-    font-weight: 900;
-    letter-spacing: -2px;
-    line-height: 1;
-    margin-bottom: 6px;
-  }
-  .logo-title span { color: var(--accent); }
-
-  .logo-sub {
-    font-size: 11px;
-    letter-spacing: 4px;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin-bottom: 40px;
-  }
-
-  .splash-desc {
-    max-width: 340px;
-    margin: 0 auto 48px;
-    color: var(--muted);
-    font-size: 13px;
-    line-height: 1.7;
-  }
-
-  .test-preview {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    justify-content: center;
-    max-width: 380px;
-    margin: 0 auto 48px;
-  }
-  .test-preview-tag {
-    font-size: 10px;
-    letter-spacing: 1px;
-    padding: 5px 10px;
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    color: var(--muted);
-    text-transform: uppercase;
-  }
-
-  .btn-primary {
-    background: var(--accent);
-    color: var(--bg);
-    font-family: var(--sans);
-    font-weight: 800;
-    font-size: 16px;
-    letter-spacing: 1px;
-    padding: 18px 48px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: all 0.2s;
-    text-transform: uppercase;
-  }
-  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(0,229,160,0.4); }
-  .btn-primary:active { transform: translateY(0); }
-
-  .btn-secondary {
-    background: transparent;
-    color: var(--muted);
-    font-family: var(--mono);
-    font-size: 13px;
-    padding: 12px 24px;
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-  .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
-
-  .btn-pass {
-    background: rgba(0,229,160,0.15);
-    color: var(--accent);
-    border: 1px solid var(--accent);
-    font-family: var(--sans);
-    font-weight: 700;
-    font-size: 15px;
-    padding: 16px 32px;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: all 0.2s;
-    flex: 1;
-  }
-  .btn-pass:hover { background: rgba(0,229,160,0.25); }
-
-  .btn-fail {
-    background: rgba(255,59,92,0.1);
-    color: var(--fail);
-    border: 1px solid var(--fail);
-    font-family: var(--sans);
-    font-weight: 700;
-    font-size: 15px;
-    padding: 16px 32px;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: all 0.2s;
-    flex: 1;
-  }
-  .btn-fail:hover { background: rgba(255,59,92,0.2); }
-
-  .btn-action {
-    background: var(--accent2);
-    color: var(--bg);
-    font-family: var(--sans);
-    font-weight: 700;
-    font-size: 14px;
-    padding: 14px 28px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: all 0.2s;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    width: 100%;
-  }
-  .btn-action:hover { filter: brightness(1.1); }
-  .btn-action:disabled { opacity: 0.4; cursor: not-allowed; }
-
-  .btn-warn {
-    background: rgba(255,170,0,0.15);
-    color: var(--warn);
-    border: 1px solid var(--warn);
-    font-family: var(--mono);
-    font-size: 12px;
-    padding: 10px 20px;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  /* ─── TEST SCREEN ─── */
-  #testscreen { padding: 0; }
-
-  .test-header {
-    position: sticky;
-    top: 0;
-    background: rgba(8,12,16,0.95);
-    backdrop-filter: blur(12px);
-    border-bottom: 1px solid var(--border);
-    padding: 16px 20px;
-    z-index: 10;
-  }
-
-  .test-header-top {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 12px;
-  }
-
-  .test-brand {
-    font-family: var(--sans);
-    font-weight: 900;
-    font-size: 18px;
-    color: var(--accent);
-    letter-spacing: -1px;
-  }
-
-  .test-counter {
-    font-size: 11px;
-    color: var(--muted);
-    letter-spacing: 2px;
-  }
-
-  .progress-bar {
-    height: 3px;
-    background: var(--border);
-    border-radius: 2px;
-    overflow: hidden;
-  }
-  .progress-fill {
-    height: 100%;
-    background: linear-gradient(90deg, var(--accent), var(--accent2));
-    transition: width 0.4s ease;
-    border-radius: 2px;
-  }
-
-  .test-body {
-    padding: 24px 20px;
-    flex: 1;
-  }
-
-  .test-category {
-    font-size: 10px;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    color: var(--accent2);
-    margin-bottom: 8px;
-  }
-
-  .test-name {
-    font-family: var(--sans);
-    font-size: 28px;
-    font-weight: 900;
-    letter-spacing: -1px;
-    margin-bottom: 8px;
-    line-height: 1.1;
-  }
-
-  .test-desc {
-    font-size: 13px;
-    color: var(--muted);
-    line-height: 1.7;
-    margin-bottom: 24px;
-  }
-
-  .test-zone {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 24px;
-    margin-bottom: 20px;
-    min-height: 180px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 16px;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .test-zone-status {
-    font-size: 11px;
-    letter-spacing: 2px;
-    color: var(--muted);
-    text-transform: uppercase;
-  }
-
-  .status-dot {
-    width: 10px; height: 10px;
-    border-radius: 50%;
-    background: var(--muted);
-    display: inline-block;
-    margin-right: 6px;
-  }
-  .status-dot.active { background: var(--accent); animation: blink 1s infinite; }
-  .status-dot.warn { background: var(--warn); }
-  .status-dot.error { background: var(--fail); }
-
-  @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
-
-  /* camera preview */
-  .cam-preview {
-    width: 100%;
-    max-height: 240px;
-    border-radius: 4px;
-    object-fit: cover;
-    background: #000;
-  }
-
-  /* audio meter */
-  .audio-meter {
-    width: 100%;
-    height: 60px;
-    position: relative;
-    display: flex;
-    align-items: flex-end;
-    gap: 3px;
-  }
-  .meter-bar {
-    flex: 1;
-    background: var(--accent);
-    border-radius: 2px 2px 0 0;
-    min-height: 3px;
-    transition: height 0.08s;
-    opacity: 0.8;
-  }
-
-  /* touch canvas */
-  #touchCanvas {
-    width: 100%;
-    height: 220px;
-    border-radius: 4px;
-    cursor: crosshair;
-    touch-action: none;
-    background: var(--bg);
-  }
-
-  /* verdict buttons */
-  .verdict-row {
-    display: flex;
-    gap: 12px;
-    margin-top: 8px;
-  }
-
-  .skip-row {
-    text-align: center;
-    margin-top: 12px;
-  }
-
-  /* info chips */
-  .info-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    background: var(--bg3);
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    padding: 8px 14px;
-    font-size: 12px;
-    color: var(--text);
-  }
-  .info-chip-label { color: var(--muted); font-size: 10px; letter-spacing: 1px; }
-
-  .info-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    width: 100%;
-  }
-  .info-card {
-    background: var(--bg3);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 14px;
-  }
-  .info-card-label {
-    font-size: 10px;
-    color: var(--muted);
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    margin-bottom: 6px;
-  }
-  .info-card-value {
-    font-size: 20px;
-    font-weight: 700;
-    color: var(--accent);
-  }
-  .info-card-unit { font-size: 11px; color: var(--muted); }
-
-  /* big icon */
-  .big-icon {
-    font-size: 48px;
-    line-height: 1;
-    margin-bottom: 8px;
-  }
-
-  /* ─── RESULTS SCREEN ─── */
-  #results {
-    padding: 0;
-  }
-
-  .results-header {
-    background: var(--card);
-    border-bottom: 1px solid var(--border);
-    padding: 40px 24px 32px;
-    text-align: center;
-  }
-
-  .results-score {
-    font-family: var(--sans);
-    font-size: 80px;
-    font-weight: 900;
-    line-height: 1;
-    letter-spacing: -4px;
-    margin-bottom: 4px;
-  }
-  .results-score.great { color: var(--pass); }
-  .results-score.ok { color: var(--warn); }
-  .results-score.bad { color: var(--fail); }
-
-  .results-label {
-    font-size: 12px;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin-bottom: 16px;
-  }
-
-  .results-summary {
-    display: flex;
-    gap: 20px;
-    justify-content: center;
-    font-size: 13px;
-  }
-  .results-summary span { display: flex; align-items: center; gap: 6px; }
-
-  .results-list {
-    padding: 24px 20px;
-  }
-
-  .result-item {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    padding: 14px 0;
-    border-bottom: 1px solid var(--border);
-  }
-  .result-item:last-child { border-bottom: none; }
-
-  .result-icon {
-    width: 36px; height: 36px;
-    border-radius: 6px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 16px;
-    flex-shrink: 0;
-  }
-  .result-icon.pass { background: rgba(0,229,160,0.1); border: 1px solid rgba(0,229,160,0.3); }
-  .result-icon.fail { background: rgba(255,59,92,0.1); border: 1px solid rgba(255,59,92,0.3); }
-  .result-icon.skip { background: rgba(90,122,154,0.1); border: 1px solid rgba(90,122,154,0.3); }
-  .result-icon.warn { background: rgba(255,170,0,0.1); border: 1px solid rgba(255,170,0,0.3); }
-
-  .result-info { flex: 1; }
-  .result-name { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
-  .result-detail { font-size: 11px; color: var(--muted); }
-
-  .result-badge {
-    font-size: 10px;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    padding: 4px 10px;
-    border-radius: 3px;
-    font-weight: 700;
-    flex-shrink: 0;
-  }
-  .result-badge.pass { background: rgba(0,229,160,0.15); color: var(--pass); }
-  .result-badge.fail { background: rgba(255,59,92,0.15); color: var(--fail); }
-  .result-badge.skip { background: rgba(90,122,154,0.15); color: var(--skip); }
-  .result-badge.warn { background: rgba(255,170,0,0.15); color: var(--warn); }
-
-  .results-actions {
-    padding: 24px 20px 40px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .export-note {
-    font-size: 11px;
-    color: var(--muted);
-    text-align: center;
-  }
-
-  /* toast */
-  .toast {
-    position: fixed;
-    bottom: 24px;
-    left: 50%;
-    transform: translateX(-50%) translateY(80px);
-    background: var(--card);
-    border: 1px solid var(--accent);
-    color: var(--accent);
-    font-size: 13px;
-    padding: 12px 24px;
-    border-radius: 4px;
-    transition: transform 0.3s ease;
-    z-index: 100;
-    white-space: nowrap;
-  }
-  .toast.show { transform: translateX(-50%) translateY(0); }
-
-  /* spinner */
-  .spinner {
-    width: 32px; height: 32px;
-    border: 2px solid var(--border);
-    border-top-color: var(--accent);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  /* battery viz */
-  .battery-viz {
-    position: relative;
-    width: 80px;
-    height: 40px;
-    border: 2px solid currentColor;
-    border-radius: 6px;
-  }
-  .battery-viz::after {
-    content: '';
-    position: absolute;
-    right: -8px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 6px;
-    height: 16px;
-    background: currentColor;
-    border-radius: 0 3px 3px 0;
-  }
-  .battery-fill {
-    position: absolute;
-    left: 2px; top: 2px; bottom: 2px;
-    border-radius: 3px;
-    transition: width 0.5s;
-  }
-
-  /* network signal bars */
-  .signal-bars {
-    display: flex;
-    align-items: flex-end;
-    gap: 4px;
-    height: 32px;
-  }
-  .signal-bar {
-    width: 8px;
-    border-radius: 2px;
-    background: var(--border);
-    transition: background 0.3s;
-  }
-  .signal-bar.active { background: var(--accent); }
-
-  /* multitouch indicator */
-  .touch-dot {
-    position: absolute;
-    width: 40px; height: 40px;
-    border-radius: 50%;
-    border: 2px solid var(--accent);
-    background: rgba(0,229,160,0.15);
-    transform: translate(-50%, -50%);
-    pointer-events: none;
-    animation: touch-pop 0.3s ease;
-  }
-  @keyframes touch-pop {
-    from { transform: translate(-50%,-50%) scale(0.5); opacity: 0; }
-    to { transform: translate(-50%,-50%) scale(1); opacity: 1; }
-  }
-
-  /* section heading for results */
-  .results-section-title {
-    font-size: 10px;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    color: var(--muted);
-    padding: 16px 0 8px;
-  }
-
-  .loading-overlay {
-    position: absolute;
-    inset: 0;
-    background: rgba(8,12,16,0.8);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    border-radius: 8px;
-    z-index: 5;
-    font-size: 12px;
-    color: var(--muted);
-  }
-
-  .device-info-bar {
-    background: var(--bg3);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 12px 16px;
-    font-size: 11px;
-    color: var(--muted);
-    margin-bottom: 16px;
-    line-height: 1.8;
-  }
-
-  .waveform-canvas {
-    width: 100%;
-    height: 80px;
-    border-radius: 4px;
-    background: var(--bg);
-  }
-
-  .cam-list {
-    display: flex;
-    gap: 8px;
-    width: 100%;
-    flex-wrap: wrap;
-  }
-  .cam-chip {
-    font-size: 11px;
-    padding: 6px 12px;
-    border-radius: 4px;
-    border: 1px solid var(--border);
-    cursor: pointer;
-    transition: all 0.2s;
-    background: var(--bg3);
-  }
-  .cam-chip.active {
-    border-color: var(--accent2);
-    color: var(--accent2);
-    background: rgba(0,180,255,0.1);
-  }
-
-  .fingerprint-zone {
-    width: 100px; height: 100px;
-    border-radius: 50%;
-    border: 2px solid var(--border);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 48px;
-    cursor: pointer;
-    transition: all 0.3s;
-    position: relative;
-  }
-  .fingerprint-zone.scanning {
-    border-color: var(--accent);
-    box-shadow: 0 0 30px rgba(0,229,160,0.3);
-    animation: ring-pulse 1s infinite;
-  }
-  .fingerprint-zone.success {
-    border-color: var(--pass);
-    box-shadow: 0 0 30px rgba(0,229,160,0.5);
-  }
-  .fingerprint-zone.error-fp {
-    border-color: var(--fail);
-  }
-
-  .torch-zone {
-    width: 100px; height: 100px;
-    border-radius: 50%;
-    border: 2px solid var(--border);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 48px;
-    cursor: pointer;
-    transition: all 0.3s;
-  }
-  .torch-zone.on {
-    border-color: var(--warn);
-    box-shadow: 0 0 40px rgba(255,170,0,0.5);
-    background: rgba(255,170,0,0.05);
-  }
-
-  @media (max-width: 360px) {
-    .test-name { font-size: 24px; }
-    .logo-title { font-size: 36px; }
-  }
+  :root{--bg:#080c10;--bg2:#0d1218;--bg3:#121820;--card:#0f1520;--border:#1e2d3d;--accent:#00e5a0;--accent2:#00b4ff;--warn:#ffaa00;--danger:#ff3b5c;--text:#e8f0fe;--muted:#5a7a9a;--pass:#00e5a0;--fail:#ff3b5c;--skip:#5a7a9a;--mono:'JetBrains Mono',monospace;--sans:'Syne',sans-serif;}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  body{background:var(--bg);color:var(--text);font-family:var(--mono);min-height:100vh;overflow-x:hidden;}
+  body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,229,160,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,160,.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
+  .screen{display:none;position:relative;z-index:1;}
+  .screen.active{display:flex;flex-direction:column;min-height:100vh;}
+  #splash{align-items:center;justify-content:center;padding:40px 24px;text-align:center;gap:0;}
+  .logo-ring{width:120px;height:120px;border-radius:50%;border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;position:relative;margin:0 auto 32px;animation:ring-pulse 3s ease-in-out infinite;box-shadow:0 0 40px rgba(0,229,160,.2);}
+  .logo-ring::before{content:'';position:absolute;inset:6px;border-radius:50%;border:1px solid rgba(0,229,160,.3);}
+  .logo-ring svg{width:48px;height:48px;}
+  @keyframes ring-pulse{0%,100%{box-shadow:0 0 40px rgba(0,229,160,.2);}50%{box-shadow:0 0 60px rgba(0,229,160,.4),0 0 120px rgba(0,229,160,.1);}}
+  .logo-title{font-family:var(--sans);font-size:42px;font-weight:900;letter-spacing:-2px;line-height:1;margin-bottom:6px;}
+  .logo-title span{color:var(--accent);}
+  .logo-sub{font-size:11px;letter-spacing:4px;text-transform:uppercase;color:var(--muted);margin-bottom:36px;}
+  .splash-desc{max-width:340px;margin:0 auto 36px;color:var(--muted);font-size:13px;line-height:1.7;}
+  .test-preview{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:380px;margin:0 auto 44px;}
+  .test-preview-tag{font-size:10px;letter-spacing:1px;padding:5px 10px;border:1px solid var(--border);border-radius:4px;color:var(--muted);text-transform:uppercase;}
+  .btn-primary{background:var(--accent);color:var(--bg);font-family:var(--sans);font-weight:800;font-size:16px;letter-spacing:1px;padding:18px 48px;border:none;border-radius:4px;cursor:pointer;transition:all .2s;text-transform:uppercase;}
+  .btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,229,160,.4);}
+  .btn-secondary{background:transparent;color:var(--muted);font-family:var(--mono);font-size:13px;padding:12px 24px;border:1px solid var(--border);border-radius:4px;cursor:pointer;transition:all .2s;}
+  .btn-secondary:hover{border-color:var(--accent);color:var(--accent);}
+  .btn-pass{background:rgba(0,229,160,.15);color:var(--accent);border:1px solid var(--accent);font-family:var(--sans);font-weight:700;font-size:15px;padding:16px 32px;border-radius:4px;cursor:pointer;transition:all .2s;flex:1;}
+  .btn-pass:hover{background:rgba(0,229,160,.25);}
+  .btn-fail{background:rgba(255,59,92,.1);color:var(--fail);border:1px solid var(--fail);font-family:var(--sans);font-weight:700;font-size:15px;padding:16px 32px;border-radius:4px;cursor:pointer;transition:all .2s;flex:1;}
+  .btn-fail:hover{background:rgba(255,59,92,.2);}
+  .btn-action{background:var(--accent2);color:var(--bg);font-family:var(--sans);font-weight:700;font-size:14px;padding:14px 28px;border:none;border-radius:4px;cursor:pointer;transition:all .2s;text-transform:uppercase;letter-spacing:1px;width:100%;}
+  .btn-action:hover{filter:brightness(1.1);}
+  .btn-action:disabled{opacity:.4;cursor:not-allowed;}
+  .btn-warn{background:rgba(255,170,0,.1);color:var(--warn);font-family:var(--mono);font-size:11px;padding:8px 14px;border:1px solid rgba(255,170,0,.3);border-radius:4px;cursor:pointer;}
+  .btn-restart{background:rgba(0,180,255,.1);color:var(--accent2);font-family:var(--mono);font-size:11px;padding:8px 14px;border:1px solid rgba(0,180,255,.3);border-radius:4px;cursor:pointer;}
+  .test-header{position:sticky;top:0;background:rgba(8,12,16,.95);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:14px 20px;z-index:10;}
+  .test-header-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+  .test-brand{font-family:var(--sans);font-weight:900;font-size:18px;color:var(--accent);letter-spacing:-1px;}
+  .test-counter{font-size:11px;color:var(--muted);letter-spacing:2px;}
+  .progress-bar{height:3px;background:var(--border);border-radius:2px;overflow:hidden;}
+  .progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .4s ease;border-radius:2px;}
+  .test-body{padding:20px;flex:1;}
+  .test-category{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--accent2);margin-bottom:6px;}
+  .test-name{font-family:var(--sans);font-size:26px;font-weight:900;letter-spacing:-1px;margin-bottom:8px;line-height:1.1;}
+  .test-desc{font-size:13px;color:var(--muted);line-height:1.7;margin-bottom:18px;}
+  .test-zone{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:20px;margin-bottom:14px;min-height:160px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;position:relative;overflow:hidden;}
+  .verdict-row{display:flex;gap:12px;margin-top:4px;}
+  .action-row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
+  .big-icon{font-size:48px;line-height:1;}
+  .status-dot{width:10px;height:10px;border-radius:50%;background:var(--muted);display:inline-block;margin-right:6px;}
+  .status-dot.active{background:var(--accent);animation:blink 1s infinite;}
+  @keyframes blink{0%,100%{opacity:1;}50%{opacity:.3;}}
+  .spinner{width:32px;height:32px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;}
+  .info-card{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:12px;}
+  .info-card-label{font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:5px;}
+  .info-card-value{font-size:18px;font-weight:700;color:var(--accent);}
+  .cam-preview{width:100%;max-height:210px;border-radius:4px;object-fit:cover;background:#000;}
+  .cam-list{display:flex;gap:8px;width:100%;flex-wrap:wrap;}
+  .cam-chip{font-size:11px;padding:6px 12px;border-radius:4px;border:1px solid var(--border);cursor:pointer;transition:all .2s;background:var(--bg3);}
+  .cam-chip.active{border-color:var(--accent2);color:var(--accent2);background:rgba(0,180,255,.1);}
+  .waveform-canvas{width:100%;height:70px;border-radius:4px;background:var(--bg);}
+  .live-badge{display:inline-flex;align-items:center;gap:5px;font-size:10px;letter-spacing:1px;color:var(--accent);border:1px solid rgba(0,229,160,.3);padding:3px 8px;border-radius:3px;text-transform:uppercase;}
+  .live-badge::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--accent);animation:blink .8s infinite;}
+  .signal-bars{display:flex;align-items:flex-end;gap:4px;height:32px;}
+  .signal-bar{width:8px;border-radius:2px;background:var(--border);transition:background .3s;}
+  .signal-bar.active{background:var(--accent);}
+  .net-alert{background:rgba(255,59,92,.08);border:1px solid rgba(255,59,92,.3);border-radius:6px;padding:10px 14px;font-size:12px;color:var(--fail);text-align:center;width:100%;}
+  .net-ok{background:rgba(0,229,160,.08);border:1px solid rgba(0,229,160,.2);border-radius:6px;padding:10px 14px;font-size:12px;color:var(--accent);text-align:center;width:100%;}
+  .battery-viz{position:relative;width:80px;height:38px;border:2px solid currentColor;border-radius:6px;}
+  .battery-viz::after{content:'';position:absolute;right:-8px;top:50%;transform:translateY(-50%);width:6px;height:16px;background:currentColor;border-radius:0 3px 3px 0;}
+  .battery-fill{position:absolute;left:2px;top:2px;bottom:2px;border-radius:3px;transition:width .5s;}
+  .charging-bolt{font-size:20px;position:absolute;inset:0;display:flex;align-items:center;justify-content:center;}
+  .thermal-gauge{width:100%;height:14px;background:var(--border);border-radius:7px;overflow:hidden;}
+  .thermal-fill{height:100%;border-radius:7px;transition:width .6s,background .6s;}
+  .thermal-labels{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:4px;}
+  .fingerprint-zone{width:100px;height:100px;border-radius:50%;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:48px;cursor:pointer;transition:all .3s;}
+  .fingerprint-zone.scanning{border-color:var(--accent);box-shadow:0 0 30px rgba(0,229,160,.3);animation:ring-pulse 1s infinite;}
+  .fingerprint-zone.success{border-color:var(--pass);box-shadow:0 0 30px rgba(0,229,160,.5);}
+  .fingerprint-zone.error-fp{border-color:var(--fail);}
+  .biometric-chip{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:4px;font-size:11px;font-weight:700;}
+  .biometric-chip.avail{background:rgba(0,229,160,.1);color:var(--pass);border:1px solid rgba(0,229,160,.3);}
+  .biometric-chip.unavail{background:rgba(255,59,92,.1);color:var(--fail);border:1px solid rgba(255,59,92,.3);}
+  .torch-zone{width:100px;height:100px;border-radius:50%;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:48px;cursor:pointer;transition:all .3s;}
+  .torch-zone.on{border-color:var(--warn);box-shadow:0 0 40px rgba(255,170,0,.5);background:rgba(255,170,0,.05);}
+  #recAudio{width:100%;border-radius:6px;accent-color:var(--accent);background:var(--bg3);}
+  #recAudio::-webkit-media-controls-panel{background:var(--bg3);}
+  .db-row{width:100%;display:flex;align-items:center;gap:8px;}
+  .waveform-canvas{border:1px solid var(--border);}
+
+  /* ── TOUCH FULLSCREEN ── */
+  #touchFS{position:fixed;inset:0;background:var(--bg);z-index:50;display:none;flex-direction:column;}
+  #touchFS.visible{display:flex;}
+  .tfs-header{padding:12px 16px;background:rgba(8,12,16,.95);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+  .tfs-title{font-family:var(--sans);font-weight:800;font-size:15px;}
+  .tfs-stats{font-size:12px;color:var(--muted);}
+  .tfs-area{flex:1;position:relative;overflow:hidden;touch-action:none;}
+  .tfs-tabs{display:flex;gap:0;border-top:1px solid var(--border);flex-shrink:0;}
+  .tfs-tab{flex:1;padding:12px 6px;border:none;background:var(--bg2);color:var(--muted);font-size:11px;font-family:var(--mono);cursor:pointer;border-right:1px solid var(--border);transition:all .2s;}
+  .tfs-tab:last-child{border-right:none;}
+  .tfs-tab.active{background:rgba(0,229,160,.08);color:var(--accent);border-top:2px solid var(--accent);}
+  .tfs-done{padding:13px;background:var(--accent);color:var(--bg);font-family:var(--sans);font-weight:800;font-size:14px;border:none;cursor:pointer;flex-shrink:0;}
+  .touch-target{position:absolute;width:54px;height:54px;border-radius:50%;border:2px solid rgba(0,229,160,.4);background:rgba(0,229,160,.04);transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:rgba(0,229,160,.6);transition:all .2s;user-select:none;}
+  .touch-target.hit{border-color:var(--accent);background:rgba(0,229,160,.22);color:var(--accent);transform:translate(-50%,-50%) scale(1.2);}
+  .tfs-instruction{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none;padding:20px;}
+  .tfs-instruction .icon{font-size:44px;margin-bottom:10px;}
+  .tfs-instruction p{font-size:13px;color:var(--muted);line-height:1.7;}
+  .tfs-big-num{font-size:56px;font-weight:900;color:var(--accent);font-family:var(--sans);margin-top:12px;}
+  .draw-canvas{position:absolute;inset:0;width:100%;height:100%;}
+  .multi-ring{position:absolute;border-radius:50%;border:3px solid;pointer-events:none;transform:translate(-50%,-50%);transition:none;}
+
+  /* ── RESULTS ── */
+  #results{padding:0;}
+  .results-header{background:var(--card);border-bottom:1px solid var(--border);padding:36px 24px 28px;text-align:center;}
+  .results-score{font-family:var(--sans);font-size:80px;font-weight:900;line-height:1;letter-spacing:-4px;margin-bottom:4px;}
+  .results-score.great{color:var(--pass);}.results-score.ok{color:var(--warn);}.results-score.bad{color:var(--fail);}
+  .results-label{font-size:12px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin-bottom:14px;}
+  .results-summary{display:flex;gap:20px;justify-content:center;font-size:13px;}
+  .results-summary span{display:flex;align-items:center;gap:6px;}
+  .results-list{padding:20px;}
+  .result-item{display:flex;align-items:center;gap:14px;padding:13px 0;border-bottom:1px solid var(--border);}
+  .result-item:last-child{border-bottom:none;}
+  .result-icon{width:36px;height:36px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+  .result-icon.pass{background:rgba(0,229,160,.1);border:1px solid rgba(0,229,160,.3);}
+  .result-icon.fail{background:rgba(255,59,92,.1);border:1px solid rgba(255,59,92,.3);}
+  .result-icon.skip{background:rgba(90,122,154,.1);border:1px solid rgba(90,122,154,.3);}
+  .result-icon.warn{background:rgba(255,170,0,.1);border:1px solid rgba(255,170,0,.3);}
+  .result-info{flex:1;}
+  .result-name{font-size:14px;font-weight:600;margin-bottom:2px;}
+  .result-detail{font-size:11px;color:var(--muted);}
+  .result-badge{font-size:10px;letter-spacing:1px;text-transform:uppercase;padding:4px 10px;border-radius:3px;font-weight:700;flex-shrink:0;}
+  .result-badge.pass{background:rgba(0,229,160,.15);color:var(--pass);}
+  .result-badge.fail{background:rgba(255,59,92,.15);color:var(--fail);}
+  .result-badge.skip{background:rgba(90,122,154,.15);color:var(--skip);}
+  .result-badge.warn{background:rgba(255,170,0,.15);color:var(--warn);}
+  .results-section-title{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);padding:14px 0 6px;}
+  .results-actions{padding:20px 20px 44px;display:flex;flex-direction:column;gap:12px;}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--card);border:1px solid var(--accent);color:var(--accent);font-size:13px;padding:12px 24px;border-radius:4px;transition:transform .3s;z-index:200;white-space:nowrap;}
+  .toast.show{transform:translateX(-50%) translateY(0);}
 </style>
 </head>
 <body>
 
-<!-- ═══════════════════════════════════════ SPLASH ═══════════════════ -->
+<!-- ══ TOUCH FULLSCREEN OVERLAY ══ -->
+<div id="touchFS">
+  <div class="tfs-header">
+    <div class="tfs-title" id="tfsTitle">Fase 1 — Toque nos alvos</div>
+    <div class="tfs-stats" id="tfsStats">0 / 0</div>
+  </div>
+  <div class="tfs-area" id="tfsArea"></div>
+  <div class="tfs-tabs">
+    <button class="tfs-tab active" id="tfsBtnP1" onclick="setTouchPhase(1)">① Alvos</button>
+    <button class="tfs-tab" id="tfsBtnP2" onclick="setTouchPhase(2)">② Multitouch</button>
+    <button class="tfs-tab" id="tfsBtnP3" onclick="setTouchPhase(3)">③ Desenho</button>
+    <button class="tfs-done" onclick="finishTouch()">✓ Concluir</button>
+  </div>
+</div>
+
+<!-- ══ SPLASH ══ -->
 <div id="splash" class="screen active">
   <div class="logo-ring">
-    <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg viewBox="0 0 48 48" fill="none">
       <rect x="14" y="4" width="20" height="40" rx="4" stroke="#00e5a0" stroke-width="2"/>
       <circle cx="24" cy="39" r="2" fill="#00e5a0"/>
       <line x1="18" y1="10" x2="30" y2="10" stroke="#00e5a0" stroke-width="2" stroke-linecap="round"/>
@@ -733,52 +171,34 @@
       <path d="M19 28 Q24 24 29 28" stroke="#00e5a0" stroke-width="1.5" fill="none" stroke-linecap="round"/>
     </svg>
   </div>
-
   <div class="logo-title">Phone<span>Diag</span></div>
-  <div class="logo-sub">Hardware Diagnostic Suite</div>
-
-  <p class="splash-desc">
-    Testa todos os componentes do seu smartphone diretamente pelo browser, sem instalar nada.
-  </p>
-
+  <div class="logo-sub">Hardware Diagnostic Suite v2</div>
+  <p class="splash-desc">Testa todos os componentes do smartphone direto no browser. Sem instalar nada.</p>
   <div class="test-preview">
-    <span class="test-preview-tag">📷 Câmeras</span>
-    <span class="test-preview-tag">🎤 Microfones</span>
-    <span class="test-preview-tag">🔊 Alto-falantes</span>
-    <span class="test-preview-tag">👆 Touch</span>
-    <span class="test-preview-tag">🔵 Bluetooth</span>
-    <span class="test-preview-tag">📶 Wi-Fi/SIM</span>
-    <span class="test-preview-tag">🔦 Flash</span>
-    <span class="test-preview-tag">🔋 Bateria</span>
-    <span class="test-preview-tag">🔏 Biometria</span>
-    <span class="test-preview-tag">🌡️ Temperatura CPU</span>
+    <span class="test-preview-tag">📷 Câmeras</span><span class="test-preview-tag">🎤 Microfones</span>
+    <span class="test-preview-tag">🔊 Alto-falantes</span><span class="test-preview-tag">👆 Touch Grid</span>
+    <span class="test-preview-tag">🔵 Bluetooth</span><span class="test-preview-tag">📶 Rede ao vivo</span>
+    <span class="test-preview-tag">🔦 Flash</span><span class="test-preview-tag">🔋 Bateria+mA</span>
+    <span class="test-preview-tag">🔏 Biometria</span><span class="test-preview-tag">🌡️ CPU real</span>
   </div>
-
   <button class="btn-primary" onclick="startDiag()">Iniciar Diagnóstico</button>
   <br><br>
-  <p style="font-size:11px;color:var(--muted);max-width:300px;text-align:center;line-height:1.6">
-    O site solicitará permissões de câmera, microfone e Bluetooth conforme necessário. Nenhum dado é enviado a servidores.
-  </p>
+  <p style="font-size:11px;color:var(--muted);max-width:300px;text-align:center;line-height:1.6">Nenhum dado enviado a servidores. Tudo local.</p>
 </div>
 
-<!-- ═══════════════════════════════════════ TEST SCREEN ═══════════════ -->
+<!-- ══ TEST SCREEN ══ -->
 <div id="testscreen" class="screen">
   <div class="test-header">
     <div class="test-header-top">
       <div class="test-brand">PhoneDiag</div>
       <div class="test-counter" id="testCounter">01 / 12</div>
     </div>
-    <div class="progress-bar">
-      <div class="progress-fill" id="progressFill" style="width:0%"></div>
-    </div>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
   </div>
-
-  <div class="test-body" id="testBody">
-    <!-- Injected by JS -->
-  </div>
+  <div class="test-body" id="testBody"></div>
 </div>
 
-<!-- ═══════════════════════════════════════ RESULTS ═══════════════════ -->
+<!-- ══ RESULTS ══ -->
 <div id="results" class="screen">
   <div class="results-header">
     <div class="results-score" id="scoreDisplay">0%</div>
@@ -789,1199 +209,1010 @@
       <span><span class="status-dot" style="background:var(--skip)"></span><span id="skipCount">0</span> Pulado</span>
     </div>
   </div>
-
   <div class="results-list" id="resultsList"></div>
-
   <div class="results-actions">
     <button class="btn-primary" onclick="exportReport()">Exportar Relatório</button>
     <button class="btn-secondary" onclick="restartDiag()">Novo Diagnóstico</button>
-    <p class="export-note">Relatório salvo como arquivo .txt no seu dispositivo</p>
+    <p style="font-size:11px;color:var(--muted);text-align:center">Relatório salvo como .txt no seu dispositivo</p>
   </div>
 </div>
 
-<!-- Toast -->
 <div class="toast" id="toast"></div>
 
 <script>
-// ════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════
 // STATE
-// ════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════
 const results = {};
 let currentTestIdx = 0;
 let activeStream = null;
 let audioCtx = null;
-let micAnalyser = null;
 let micAnimFrame = null;
-let touchPoints = 0;
-let maxTouchPoints = 0;
-let touchDrawActive = false;
 let torchActive = false;
 let torchTrack = null;
-let pressureObserver = null;
+let pressureObs = null;
+let netListeners = [];
+let batteryObj = null;
+let batteryHistory = [];
+let batteryTimer = null;
 
-// Device info collected during tests
-const deviceInfo = {
-  userAgent: navigator.userAgent,
-  cameras: [],
-  microphones: [],
-  platform: navigator.platform || 'unknown'
-};
+// touch
+let touchPhase = 1;
+let touchHit = 0;
+let touchTotal = 0;
+let touchMaxSimul = 0;
+let touchPointers = {};
+const TOUCH_COLORS = ['#00e5a0','#00b4ff','#ffaa00','#ff3b5c','#a855f7','#f97316','#06b6d4','#84cc16'];
 
-// ════════════════════════════════════════════════════════════════════
-// TEST DEFINITIONS
-// ════════════════════════════════════════════════════════════════════
+const devInfo = { cameras: [], mics: [] };
+
+// ══════════════════════════════════════════════
+// TESTS
+// ══════════════════════════════════════════════
 const TESTS = [
-  { id: 'speaker_main',    label: 'Alto-falante Principal', category: 'Áudio',       emoji: '🔊', fn: testSpeakerMain   },
-  { id: 'speaker_ear',     label: 'Alto-falante Auricular', category: 'Áudio',       emoji: '📞', fn: testSpeakerEar    },
-  { id: 'cameras',         label: 'Câmeras',               category: 'Visual',      emoji: '📷', fn: testCameras       },
-  { id: 'microphones',     label: 'Microfones',            category: 'Áudio',       emoji: '🎤', fn: testMicrophones   },
-  { id: 'touch',           label: 'Tela Touch',            category: 'Interface',   emoji: '👆', fn: testTouch         },
-  { id: 'network',         label: 'Sinal de Rede / SIM',   category: 'Conectividade',emoji: '📶', fn: testNetwork       },
-  { id: 'wifi',            label: 'Wi-Fi',                 category: 'Conectividade',emoji: '📡', fn: testWifi          },
-  { id: 'bluetooth',       label: 'Bluetooth',             category: 'Conectividade',emoji: '🔵', fn: testBluetooth     },
-  { id: 'flash',           label: 'Flash / Lanterna',      category: 'Hardware',    emoji: '🔦', fn: testFlash         },
-  { id: 'fingerprint',     label: 'Impressão Digital',     category: 'Segurança',   emoji: '🔏', fn: testFingerprint   },
-  { id: 'battery',         label: 'Bateria & Carregamento',category: 'Hardware',    emoji: '🔋', fn: testBattery       },
-  { id: 'thermal',         label: 'Temperatura / CPU',     category: 'Hardware',    emoji: '🌡️', fn: testThermal       },
+  { id:'spk_main',  label:'Alto-falante Principal', category:'Áudio',        emoji:'🔊', fn:testSpeakerMain },
+  { id:'spk_ear',   label:'Alto-falante Auricular', category:'Áudio',        emoji:'📞', fn:testSpeakerEar  },
+  { id:'cameras',   label:'Câmeras',               category:'Visual',       emoji:'📷', fn:testCameras     },
+  { id:'mics',      label:'Microfones',            category:'Áudio',        emoji:'🎤', fn:testMics        },
+  { id:'touch',     label:'Tela Touch',            category:'Interface',    emoji:'👆', fn:testTouch       },
+  { id:'network',   label:'Sinal de Rede / SIM',   category:'Conectividade',emoji:'📶', fn:testNetwork     },
+  { id:'wifi',      label:'Wi-Fi',                 category:'Conectividade',emoji:'📡', fn:testWifi        },
+  { id:'bt',        label:'Bluetooth',             category:'Conectividade',emoji:'🔵', fn:testBluetooth   },
+  { id:'flash',     label:'Flash / Lanterna',      category:'Hardware',     emoji:'🔦', fn:testFlash       },
+  { id:'bio',       label:'Impressão Digital',     category:'Segurança',    emoji:'🔏', fn:testFingerprint },
+  { id:'battery',   label:'Bateria & Carregamento',category:'Hardware',     emoji:'🔋', fn:testBattery     },
+  { id:'thermal',   label:'Temperatura / CPU',     category:'Hardware',     emoji:'🌡️', fn:testThermal     },
 ];
 
-// ════════════════════════════════════════════════════════════════════
-// NAV
-// ════════════════════════════════════════════════════════════════════
-function showScreen(id) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
-  window.scrollTo(0,0);
+// ══════════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════════
+function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');window.scrollTo(0,0);}
+function startDiag(){currentTestIdx=0;Object.keys(results).forEach(k=>delete results[k]);showScreen('testscreen');loadTest(0);}
+function restartDiag(){cleanup();startDiag();}
+
+function loadTest(idx){
+  cleanup();
+  if(idx>=TESTS.length){showResults();return;}
+  currentTestIdx=idx;
+  const t=TESTS[idx];
+  document.getElementById('testCounter').textContent=String(idx+1).padStart(2,'0')+' / '+String(TESTS.length).padStart(2,'0');
+  document.getElementById('progressFill').style.width=Math.round(idx/TESTS.length*100)+'%';
+  document.getElementById('testBody').innerHTML=`
+    <div class="test-category">${t.category}</div>
+    <div class="test-name">${t.emoji} ${t.label}</div>
+    <div class="test-desc" id="desc">Iniciando...</div>
+    <div class="test-zone" id="zone"><div class="spinner"></div></div>
+    <div id="verdict"></div>
+    <div class="action-row">
+      <button class="btn-restart" onclick="reloadTest()">🔄 Reiniciar teste</button>
+      <button class="btn-warn" onclick="skipTest()">⏭ Pular</button>
+    </div>`;
+  try{t.fn();}catch(e){setDesc('Erro: '+e.message);setZone(`<p style="color:var(--fail)">${e.message}</p>`);showVerdict();}
 }
 
-function startDiag() {
-  currentTestIdx = 0;
-  Object.keys(results).forEach(k => delete results[k]);
-  showScreen('testscreen');
-  loadTest(0);
+function reloadTest(){cleanup();loadTest(currentTestIdx);}
+function setDesc(h){const e=document.getElementById('desc');if(e)e.innerHTML=h;}
+function setZone(h){const e=document.getElementById('zone');if(e)e.innerHTML=h;}
+function showVerdict(html){
+  const el=document.getElementById('verdict');if(!el)return;
+  el.innerHTML=html||`<div class="verdict-row"><button class="btn-pass" onclick="record('pass')">✅ Funcionou</button><button class="btn-fail" onclick="record('fail')">❌ Não Funcionou</button></div>`;
+}
+function record(status,detail){
+  const t=TESTS[currentTestIdx];
+  results[t.id]={status,detail:detail||'',label:t.label,emoji:t.emoji,category:t.category};
+  cleanup();loadTest(currentTestIdx+1);
+}
+function skipTest(){
+  const t=TESTS[currentTestIdx];
+  results[t.id]={status:'skip',detail:'Pulado',label:t.label,emoji:t.emoji,category:t.category};
+  cleanup();loadTest(currentTestIdx+1);
 }
 
-function restartDiag() {
-  stopStream();
-  stopMic();
-  startDiag();
+// ══════════════════════════════════════════════
+// CLEANUP
+// ══════════════════════════════════════════════
+function cleanup(){
+  if(activeStream){activeStream.getTracks().forEach(t=>t.stop());activeStream=null;}
+  if(micAnimFrame){cancelAnimationFrame(micAnimFrame);micAnimFrame=null;}
+  if(audioCtx){try{audioCtx.close();}catch(e){}audioCtx=null;}
+  if(micRecording)stopMicRec(true);
+  if(micCountdownTimer){clearInterval(micCountdownTimer);micCountdownTimer=null;}
+  if(micRecorder&&micRecorder.state!=='inactive'){try{micRecorder.stop();}catch(e){}}
+  micRecorder=null;micChunks=[];micLastBlob=null;micRecording=false;
+  if(torchActive)turnOffTorch();
+  if(pressureObs){try{pressureObs.unobserve('cpu');}catch(e){}pressureObs=null;}
+  netListeners.forEach(({obj,type,fn})=>obj.removeEventListener(type,fn));
+  netListeners=[];
+  if(batteryTimer){clearInterval(batteryTimer);batteryTimer=null;}
+  batteryHistory=[];
+  document.getElementById('touchFS').classList.remove('visible');
+  touchPointers={};
 }
 
-// ════════════════════════════════════════════════════════════════════
-// TEST RUNNER
-// ════════════════════════════════════════════════════════════════════
-function loadTest(idx) {
-  stopStream();
-  stopMic();
-  if (torchActive) turnOffTorch();
-  if (pressureObserver) { try { pressureObserver.unobserve('cpu'); } catch(e){} pressureObserver = null; }
+function getAC(){if(!audioCtx||audioCtx.state==='closed')audioCtx=new(window.AudioContext||window.webkitAudioContext)();return audioCtx;}
+function toast(msg){const e=document.getElementById('toast');e.textContent=msg;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),2500);}
+function addNetListener(obj,type,fn){obj.addEventListener(type,fn);netListeners.push({obj,type,fn});}
 
-  if (idx >= TESTS.length) {
-    showResults();
-    return;
-  }
-
-  currentTestIdx = idx;
-  const test = TESTS[idx];
-  const pct = Math.round((idx / TESTS.length) * 100);
-
-  document.getElementById('testCounter').textContent =
-    String(idx + 1).padStart(2,'0') + ' / ' + String(TESTS.length).padStart(2,'0');
-  document.getElementById('progressFill').style.width = pct + '%';
-
-  const body = document.getElementById('testBody');
-  body.innerHTML = `
-    <div class="test-category">${test.category}</div>
-    <div class="test-name">${test.label}</div>
-    <div class="test-desc" id="testDesc">Aguardando...</div>
-    <div class="test-zone" id="testZone">
-      <div class="spinner"></div>
-    </div>
-    <div id="verdictArea"></div>
-    <div class="skip-row">
-      <button class="btn-warn" onclick="skipTest()">Pular este teste</button>
-    </div>
-  `;
-
-  // Run
-  try {
-    test.fn();
-  } catch(e) {
-    setDesc('Erro ao iniciar: ' + e.message);
-    setZone(`<p style="color:var(--fail);font-size:13px">⚠️ ${e.message}</p>`);
-    showVerdict();
-  }
-}
-
-function setDesc(html) {
-  const el = document.getElementById('testDesc');
-  if (el) el.innerHTML = html;
-}
-
-function setZone(html) {
-  const el = document.getElementById('testZone');
-  if (el) el.innerHTML = html;
-}
-
-function showVerdict(customHTML) {
-  const el = document.getElementById('verdictArea');
-  if (!el) return;
-  el.innerHTML = customHTML || `
-    <div class="verdict-row">
-      <button class="btn-pass" onclick="recordResult('pass')">✅ Funcionou</button>
-      <button class="btn-fail" onclick="recordResult('fail')">❌ Não Funcionou</button>
-    </div>
-  `;
-}
-
-function recordResult(status, detail) {
-  const test = TESTS[currentTestIdx];
-  results[test.id] = { status, detail: detail || '', label: test.label, emoji: test.emoji, category: test.category };
-  stopStream();
-  stopMic();
-  loadTest(currentTestIdx + 1);
-}
-
-function skipTest() {
-  const test = TESTS[currentTestIdx];
-  results[test.id] = { status: 'skip', detail: 'Pulado pelo usuário', label: test.label, emoji: test.emoji, category: test.category };
-  stopStream();
-  stopMic();
-  if (torchActive) turnOffTorch();
-  loadTest(currentTestIdx + 1);
-}
-
-// ════════════════════════════════════════════════════════════════════
-// UTILS
-// ════════════════════════════════════════════════════════════════════
-function stopStream() {
-  if (activeStream) {
-    activeStream.getTracks().forEach(t => t.stop());
-    activeStream = null;
-  }
-}
-
-function stopMic() {
-  if (micAnimFrame) { cancelAnimationFrame(micAnimFrame); micAnimFrame = null; }
-  if (audioCtx) { try { audioCtx.close(); } catch(e){} audioCtx = null; }
-  micAnalyser = null;
-}
-
-function toast(msg) {
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.classList.add('show');
-  setTimeout(() => el.classList.remove('show'), 2500);
-}
-
-function getAudioCtx() {
-  if (!audioCtx || audioCtx.state === 'closed') {
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  }
-  return audioCtx;
-}
-
-// ════════════════════════════════════════════════════════════════════
-// TEST: SPEAKER MAIN
-// ════════════════════════════════════════════════════════════════════
-function testSpeakerMain() {
-  setDesc('Vamos tocar um som pelo alto-falante principal. Coloque o celular em modo normal (não no ouvido) e pressione Tocar.');
-  setZone(`
-    <div class="big-icon">🔊</div>
-    <button class="btn-action" id="playBtn" onclick="playSpeakerTest(false)">Tocar Som de Teste</button>
-    <div id="playStatus" style="font-size:12px;color:var(--muted)">Pronto para testar</div>
-  `);
+// ══════════════════════════════════════════════
+// 1. SPEAKER MAIN
+// ══════════════════════════════════════════════
+function testSpeakerMain(){
+  setDesc('Toque em <strong>Tocar Som</strong>. Ouça pelo alto-falante de fundo (não no ouvido).');
+  setZone(`<div class="big-icon">🔊</div><button class="btn-action" id="spkBtn" onclick="playMain()">Tocar Som de Teste</button><div id="spkSt" style="font-size:12px;color:var(--muted)">Pronto</div>`);
   showVerdict();
 }
-
-function playSpeakerTest(earpiece) {
-  const btn = document.getElementById('playBtn');
-  const status = document.getElementById('playStatus');
-  if (btn) btn.disabled = true;
-  if (status) status.textContent = '▶ Reproduzindo...';
-
-  const ctx = getAudioCtx();
-
-  // Play a pleasant two-tone melody
-  const notes = [440, 550, 660, 550, 440];
-  let time = ctx.currentTime;
-  notes.forEach((freq, i) => {
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.frequency.value = freq;
-    osc.type = 'sine';
-    gain.gain.setValueAtTime(0, time + i * 0.2);
-    gain.gain.linearRampToValueAtTime(0.4, time + i * 0.2 + 0.05);
-    gain.gain.linearRampToValueAtTime(0, time + i * 0.2 + 0.18);
-    osc.start(time + i * 0.2);
-    osc.stop(time + i * 0.2 + 0.2);
-  });
-
-  setTimeout(() => {
-    if (btn) btn.disabled = false;
-    if (status) status.textContent = 'Som tocado! Você ouviu pelo alto-falante?';
-  }, 1200);
+function playMain(){
+  document.getElementById('spkBtn').disabled=true;
+  document.getElementById('spkSt').textContent='▶ Tocando...';
+  const ctx=getAC(), notes=[261,329,392,523,659];
+  let t=ctx.currentTime;
+  notes.forEach((f,i)=>{const o=ctx.createOscillator(),g=ctx.createGain();o.connect(g);g.connect(ctx.destination);o.frequency.value=f;o.type='sine';g.gain.setValueAtTime(0,t+i*.22);g.gain.linearRampToValueAtTime(.4,t+i*.22+.05);g.gain.linearRampToValueAtTime(0,t+i*.22+.20);o.start(t+i*.22);o.stop(t+i*.22+.22);});
+  setTimeout(()=>{const b=document.getElementById('spkBtn'),s=document.getElementById('spkSt');if(b)b.disabled=false;if(s)s.textContent='✅ Som tocado! Você ouviu pelo alto-falante?';},1400);
 }
 
-// ════════════════════════════════════════════════════════════════════
-// TEST: SPEAKER EAR
-// ════════════════════════════════════════════════════════════════════
-function testSpeakerEar() {
-  setDesc('Vamos tentar tocar um som pelo auricular (alto-falante de chamada). Coloque o celular no ouvido como se fosse uma ligação e pressione Tocar.');
-
-  const hasOutputAPI = !!(navigator.mediaDevices && navigator.mediaDevices.selectAudioOutput);
-
-  setZone(`
-    <div class="big-icon">📞</div>
-    <button class="btn-action" id="earBtn" onclick="playEarpieceTest()">Tocar no Auricular</button>
-    <div id="earStatus" style="font-size:12px;color:var(--muted);text-align:center;line-height:1.6">
-      ${hasOutputAPI ? 'API de saída de áudio disponível' : 'Método alternativo (volume direto)'}
-    </div>
-  `);
+// ══════════════════════════════════════════════
+// 2. SPEAKER EAR
+// ══════════════════════════════════════════════
+function testSpeakerEar(){
+  setDesc('Coloque o celular no ouvido como em uma ligação e toque o som. O áudio deve sair pelo auricular.');
+  setZone(`<div class="big-icon">📞</div><button class="btn-action" id="earBtn" onclick="playEar()">Tocar no Auricular</button><div id="earSt" style="font-size:12px;color:var(--muted);text-align:center">Coloque no ouvido antes de tocar</div>`);
   showVerdict();
 }
-
-async function playEarpieceTest() {
-  const btn = document.getElementById('earBtn');
-  const status = document.getElementById('earStatus');
-  if (btn) btn.disabled = true;
-  if (status) status.textContent = '▶ Tentando rotear para auricular...';
-
-  try {
-    // Try Audio Output Devices API first
-    if (navigator.mediaDevices && navigator.mediaDevices.selectAudioOutput) {
-      const device = await navigator.mediaDevices.selectAudioOutput({ deviceId: 'default' });
-      if (status) status.textContent = 'Dispositivo: ' + (device.label || 'auricular') + ' — tocando...';
-    }
-  } catch(e) {
-    if (status) status.textContent = 'Seleção manual não disponível. Tocando e aguardando...';
-  }
-
-  // Play high frequency (more audible on earpiece)
-  const ctx = getAudioCtx();
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
-  osc.connect(gain);
-  gain.connect(ctx.destination);
-  osc.frequency.value = 1000;
-  osc.type = 'sine';
-  gain.gain.setValueAtTime(0.5, ctx.currentTime);
-  gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 1.5);
-  osc.start(ctx.currentTime);
-  osc.stop(ctx.currentTime + 1.5);
-
-  setTimeout(() => {
-    if (btn) btn.disabled = false;
-    if (status) status.textContent = 'Coloque no ouvido! Você ouviu pelo auricular?';
-  }, 1600);
+async function playEar(){
+  const btn=document.getElementById('earBtn'),st=document.getElementById('earSt');
+  if(btn)btn.disabled=true;if(st)st.textContent='Roteando...';
+  try{if(navigator.mediaDevices&&navigator.mediaDevices.selectAudioOutput)await navigator.mediaDevices.selectAudioOutput({deviceId:'default'});}catch(e){}
+  const ctx=getAC(),o=ctx.createOscillator(),g=ctx.createGain();
+  o.connect(g);g.connect(ctx.destination);o.frequency.value=1200;o.type='sine';
+  g.gain.setValueAtTime(.5,ctx.currentTime);g.gain.linearRampToValueAtTime(0,ctx.currentTime+1.8);
+  o.start();o.stop(ctx.currentTime+1.8);
+  setTimeout(()=>{if(btn)btn.disabled=false;if(st)st.textContent='Você ouviu no ouvido (auricular)?';},1900);
 }
 
-// ════════════════════════════════════════════════════════════════════
-// TEST: CAMERAS
-// ════════════════════════════════════════════════════════════════════
-async function testCameras() {
-  setDesc('Detectando câmeras disponíveis...');
+// ══════════════════════════════════════════════
+// 3. CAMERAS — enumeração completa + labels inteligentes
+// ══════════════════════════════════════════════
+
+// Identifica o tipo da câmera pelo label retornado pelo browser
+function guessCamLabel(raw, index, total){
+  if(!raw) {
+    // Sem label: heurística por posição
+    if(total===1) return {short:'Câmera',icon:'📷',detail:'Câmera única'};
+    if(index===0) return {short:'Traseira',icon:'📸',detail:'Câmera traseira principal'};
+    if(index===total-1) return {short:'Frontal',icon:'🤳',detail:'Câmera frontal (selfie)'};
+    return {short:`Extra ${index}`,icon:'🔭',detail:`Câmera extra ${index}`};
+  }
+  const l=raw.toLowerCase();
+  // Frontal / selfie
+  if(/front|selfie|user|facing.*front|^0\b/i.test(l))
+    return {short:'Frontal',icon:'🤳',detail:raw};
+  // Ultra wide
+  if(/ultra.?wide|ultrawide|wide.?angle|0\.5|0,5/i.test(l))
+    return {short:'Ultrawide',icon:'🌐',detail:raw};
+  // Macro
+  if(/macro/i.test(l))
+    return {short:'Macro',icon:'🔬',detail:raw};
+  // Telephoto / zoom
+  if(/telephoto|tele|zoom|3x|5x|10x/i.test(l))
+    return {short:'Telephoto',icon:'🔭',detail:raw};
+  // Depth / TOF
+  if(/depth|tof|lidar/i.test(l))
+    return {short:'Depth',icon:'📡',detail:raw};
+  // Traseira genérica
+  if(/back|rear|environment|facing.*back/i.test(l))
+    return {short:'Traseira',icon:'📸',detail:raw};
+  // Fallback com label truncado
+  return {short:raw.length>16?raw.substring(0,16)+'…':raw,icon:'📷',detail:raw};
+}
+
+async function testCameras(){
+  setDesc('Solicitando permissão e enumerando câmeras...');
   setZone('<div class="spinner"></div>');
+  try{
+    // 1. Pede permissão (sem isso labels ficam vazios no Android)
+    const tmp=await navigator.mediaDevices.getUserMedia({video:true,audio:false});
+    tmp.getTracks().forEach(t=>t.stop());
 
-  try {
-    // Get permissions first
-    const tempStream = await navigator.mediaDevices.getUserMedia({ video: true });
-    tempStream.getTracks().forEach(t => t.stop());
+    // 2. Enumera todos os dispositivos de vídeo
+    const devs=await navigator.mediaDevices.enumerateDevices();
+    let cams=devs.filter(d=>d.kind==='videoinput');
 
-    const devices = await navigator.mediaDevices.enumerateDevices();
-    const cameras = devices.filter(d => d.kind === 'videoinput');
-    deviceInfo.cameras = cameras;
+    // 3. Remove duplicatas por deviceId
+    const seen=new Set();
+    cams=cams.filter(c=>{if(seen.has(c.deviceId))return false;seen.add(c.deviceId);return true;});
 
-    if (cameras.length === 0) {
-      setZone('<p style="color:var(--fail)">Nenhuma câmera detectada</p>');
-      showVerdict();
-      return;
+    devInfo.cameras=cams;
+
+    if(!cams.length){
+      setZone('<p style="color:var(--fail)">Nenhuma câmera detectada.</p>');
+      showVerdict();return;
     }
 
-    setDesc(`<strong>${cameras.length} câmera(s)</strong> detectada(s). Teste cada uma clicando no chip abaixo.`);
+    // 4. Gera labels inteligentes
+    const labeled=cams.map((c,i)=>({...c,...guessCamLabel(c.label,i,cams.length),index:i}));
 
-    const chips = cameras.map((cam, i) => {
-      let label = cam.label || `Câmera ${i + 1}`;
-      if (!cam.label) {
-        if (i === 0) label = 'Câmera Principal (Traseira)';
-        else if (i === 1) label = 'Câmera Frontal';
-        else label = `Câmera Extra ${i}`;
-      }
-      return `<button class="cam-chip ${i===0?'active':''}" onclick="switchCamera('${cam.deviceId}', ${i})" id="camChip${i}">${label}</button>`;
-    }).join('');
+    setDesc(`<strong style="color:var(--accent)">${cams.length} câmera(s)</strong> detectada(s). Selecione cada uma para testar.`);
+
+    const chips=labeled.map((c,i)=>
+      `<button class="cam-chip ${!i?'active':''}" onclick="swCam('${c.deviceId}',${i})" id="cc${i}">
+        ${c.icon} ${c.short}
+      </button>`
+    ).join('');
 
     setZone(`
-      <div class="cam-list">${chips}</div>
-      <video class="cam-preview" id="camPreview" autoplay playsinline muted></video>
-      <div id="camLabel" style="font-size:11px;color:var(--muted)">Carregando câmera...</div>
+      <div class="cam-list" id="camChips">${chips}</div>
+      <video class="cam-preview" id="vp" autoplay playsinline muted></video>
+      <div id="camInfoBox" style="width:100%"></div>
     `);
 
-    switchCamera(cameras[0].deviceId, 0);
-    showVerdict(`
-      <div class="verdict-row">
-        <button class="btn-pass" onclick="recordResult('pass', '${cameras.length} câmera(s) testada(s)')">✅ Câmeras OK</button>
-        <button class="btn-fail" onclick="recordResult('fail', 'câmera com problema')">❌ Problema</button>
-      </div>
-    `);
-  } catch(e) {
-    setZone(`<p style="color:var(--fail);font-size:13px">Permissão negada ou câmera não disponível.<br><br>${e.message}</p>`);
-    showVerdict(`
-      <div class="verdict-row">
-        <button class="btn-fail" onclick="recordResult('fail','Permissão negada')">❌ Não Funcionou</button>
-      </div>
-    `);
+    // Guarda labels globalmente para uso em swCam
+    window._camLabeled = labeled;
+    swCam(cams[0].deviceId, 0);
+
+    const n=cams.length;
+    showVerdict(`<div class="verdict-row">
+      <button class="btn-pass" onclick="record('pass','${n} câmera(s) OK: '+window._camLabeled.map(c=>c.short).join(', '))">✅ Todas OK</button>
+      <button class="btn-fail" onclick="record('fail','câmera com problema')">❌ Problema</button>
+    </div>`);
+
+  }catch(e){
+    setZone(`<p style="color:var(--fail);font-size:13px">⚠️ Permissão negada ou câmera indisponível.<br><small>${e.message}</small></p>`);
+    showVerdict(`<div class="verdict-row"><button class="btn-fail" onclick="record('fail','Permissão negada')">❌ Negado</button></div>`);
   }
 }
 
-async function switchCamera(deviceId, idx) {
-  stopStream();
-  document.querySelectorAll('.cam-chip').forEach((el, i) => {
-    el.classList.toggle('active', i === idx);
-  });
-  const label = document.getElementById('camLabel');
-  if (label) label.textContent = 'Ativando câmera...';
+async function swCam(did, i){
+  if(activeStream){activeStream.getTracks().forEach(t=>t.stop());activeStream=null;}
+  document.querySelectorAll('.cam-chip').forEach((e,j)=>e.classList.toggle('active',j===i));
 
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: { deviceId: { exact: deviceId }, width: { ideal: 1280 }, height: { ideal: 720 } }
+  const infoBox=document.getElementById('camInfoBox');
+  if(infoBox) infoBox.innerHTML='<div style="font-size:11px;color:var(--muted)">Ativando câmera...</div>';
+
+  try{
+    const s=await navigator.mediaDevices.getUserMedia({
+      video:{deviceId:{exact:did},width:{ideal:1920},height:{ideal:1080}},
+      audio:false
     });
-    activeStream = stream;
-    const vid = document.getElementById('camPreview');
-    if (vid) { vid.srcObject = stream; }
-    const track = stream.getVideoTracks()[0];
-    const settings = track.getSettings();
-    if (label) label.textContent = `${settings.width}×${settings.height} — ${track.label || 'ativa'}`;
-  } catch(e) {
-    if (label) label.textContent = 'Erro: ' + e.message;
+    activeStream=s;
+    const v=document.getElementById('vp');if(v)v.srcObject=s;
+
+    const track=s.getVideoTracks()[0];
+    const settings=track.getSettings();
+    const caps=track.getCapabilities ? track.getCapabilities() : {};
+    const lbl=window._camLabeled?window._camLabeled[i]:null;
+
+    // Detecta facing mode
+    const facing=settings.facingMode||caps.facingMode?.toString()||'—';
+    const facingIcon=facing.includes('user')?'🤳':facing.includes('environment')?'📸':'—';
+
+    // Resolução máxima suportada
+    const maxW=caps.width?caps.width.max:'?';
+    const maxH=caps.height?caps.height.max:'?';
+    const maxFps=caps.frameRate?caps.frameRate.max:'?';
+
+    if(infoBox) infoBox.innerHTML=`
+      <div class="info-grid" style="margin-top:8px">
+        <div class="info-card"><div class="info-card-label">Câmera</div><div class="info-card-value" style="font-size:14px">${lbl?lbl.icon+' '+lbl.short:'—'}</div></div>
+        <div class="info-card"><div class="info-card-label">Direção</div><div class="info-card-value" style="font-size:14px">${facingIcon} ${facing}</div></div>
+        <div class="info-card"><div class="info-card-label">Res. Ativa</div><div class="info-card-value" style="font-size:13px">${settings.width||'?'}×${settings.height||'?'}</div></div>
+        <div class="info-card"><div class="info-card-label">Res. Máx</div><div class="info-card-value" style="font-size:13px">${maxW}×${maxH}</div></div>
+        <div class="info-card"><div class="info-card-label">FPS ativo</div><div class="info-card-value" style="font-size:13px">${settings.frameRate?Math.round(settings.frameRate):'-'}</div></div>
+        <div class="info-card"><div class="info-card-label">FPS máx</div><div class="info-card-value" style="font-size:13px">${typeof maxFps==='number'?Math.round(maxFps):maxFps}</div></div>
+      </div>
+      <div style="font-size:10px;color:var(--muted);margin-top:6px;line-height:1.6">${lbl?lbl.detail:track.label||''}</div>
+    `;
+  }catch(e){
+    if(infoBox) infoBox.innerHTML=`<p style="color:var(--fail);font-size:12px">Erro ao ativar: ${e.message}</p>`;
   }
 }
 
-// ════════════════════════════════════════════════════════════════════
-// TEST: MICROPHONES
-// ════════════════════════════════════════════════════════════════════
-async function testMicrophones() {
+// ══════════════════════════════════════════════
+// 4. MICROPHONES — waveform ao vivo + gravação 5s + playback
+// ══════════════════════════════════════════════
+let micRecorder=null;
+let micChunks=[];
+let micRecording=false;
+let micCountdownTimer=null;
+let micLastBlob=null;
+
+async function testMics(){
   setDesc('Detectando microfones...');
-  setZone('<div class="spinner"></div>');
+  try{
+    const tmp=await navigator.mediaDevices.getUserMedia({audio:true});tmp.getTracks().forEach(t=>t.stop());
+    const devs=await navigator.mediaDevices.enumerateDevices();
+    const mics=devs.filter(d=>d.kind==='audioinput');devInfo.mics=mics;
+    setDesc(`<strong style="color:var(--accent)">${mics.length} microfone(s)</strong> detectado(s).<br>Monitore a onda ao vivo <strong>e/ou grave 5 segundos</strong> para ouvir o playback.`);
 
-  try {
-    const tempStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    tempStream.getTracks().forEach(t => t.stop());
-
-    const devices = await navigator.mediaDevices.enumerateDevices();
-    const mics = devices.filter(d => d.kind === 'audioinput');
-    deviceInfo.microphones = mics;
-
-    setDesc(`<strong>${mics.length} microfone(s)</strong> detectado(s). Fale próximo ao celular para ver o nível de áudio.`);
-
-    const chips = mics.map((mic, i) => {
-      const label = mic.label || `Microfone ${i + 1}`;
-      return `<button class="cam-chip ${i===0?'active':''}" onclick="switchMic('${mic.deviceId}',${i})">${label.substring(0,24)}</button>`;
+    const chips=mics.map((m,i)=>{
+      const rawLabel=m.label||'';
+      let label=rawLabel||'Microfone '+(i+1);
+      // Tenta identificar tipo pelo label
+      if(/bottom|baixo|principal/i.test(rawLabel)) label='🎤 Principal';
+      else if(/top|cima|noise|cancel/i.test(rawLabel)) label='🎤 Superior';
+      else if(/front|frontal|selfie/i.test(rawLabel)) label='🎤 Frontal';
+      else if(/back|traseiro/i.test(rawLabel)) label='🎤 Traseiro';
+      else if(!rawLabel) label='🎤 Mic '+(i+1);
+      else label='🎤 '+rawLabel.substring(0,18);
+      return `<button class="cam-chip ${!i?'active':''}" onclick="swMic('${m.deviceId}',${i})">${label}</button>`;
     }).join('');
 
     setZone(`
-      <div class="cam-list">${chips}</div>
-      <canvas id="waveCanvas" class="waveform-canvas" width="400" height="80"></canvas>
-      <div id="micLabel" style="font-size:11px;color:var(--muted)">Ativando microfone...</div>
+      <div class="cam-list" id="micChips">${chips}</div>
+      <canvas id="wc" class="waveform-canvas" width="400" height="70"></canvas>
+
+      <!-- DB meter bar -->
+      <div style="width:100%;display:flex;align-items:center;gap:8px">
+        <span style="font-size:10px;color:var(--muted);min-width:28px" id="dbLabel">— dB</span>
+        <div style="flex:1;height:8px;background:var(--border);border-radius:4px;overflow:hidden">
+          <div id="dbMeter" style="height:100%;width:0%;background:linear-gradient(90deg,var(--accent),var(--warn),var(--fail));transition:width .08s;border-radius:4px"></div>
+        </div>
+      </div>
+
+      <!-- Botões de gravação -->
+      <div style="display:flex;gap:8px;width:100%">
+        <button class="btn-action" id="recBtn" onclick="startMicRec()" style="flex:1">⏺ Gravar 5s</button>
+        <button class="btn-action" id="playBtn" onclick="playMicRec()" style="flex:1;background:var(--bg3);color:var(--muted);border:1px solid var(--border)" disabled>▶ Ouvir</button>
+      </div>
+      <div id="recStatus" style="font-size:12px;color:var(--muted);text-align:center;min-height:18px"></div>
+      <audio id="recAudio" style="display:none" controls></audio>
+      <div id="mLbl" style="font-size:10px;color:var(--muted);text-align:center">Ativando microfone...</div>
     `);
 
-    switchMic(mics[0].deviceId, 0);
-    showVerdict(`
-      <div class="verdict-row">
-        <button class="btn-pass" onclick="recordResult('pass','${mics.length} microfone(s) testado(s)')">✅ Microfones OK</button>
-        <button class="btn-fail" onclick="recordResult('fail','microfone com problema')">❌ Problema</button>
-      </div>
-    `);
-  } catch(e) {
+    swMic(mics[0].deviceId,0);
+    showVerdict(`<div class="verdict-row">
+      <button class="btn-pass" onclick="record('pass','${mics.length} mic(s) OK')">✅ Microfones OK</button>
+      <button class="btn-fail" onclick="record('fail','mic com problema')">❌ Problema</button>
+    </div>`);
+  }catch(e){
     setZone(`<p style="color:var(--fail);font-size:13px">Permissão negada: ${e.message}</p>`);
     showVerdict();
   }
 }
 
-async function switchMic(deviceId, idx) {
-  stopStream();
-  stopMic();
-  document.querySelectorAll('.cam-chip').forEach((el, i) => el.classList.toggle('active', i === idx));
-  const label = document.getElementById('micLabel');
+async function swMic(did,i){
+  // Cancela gravação em curso
+  if(micRecording) stopMicRec(true);
+  if(activeStream){activeStream.getTracks().forEach(t=>t.stop());activeStream=null;}
+  if(micAnimFrame){cancelAnimationFrame(micAnimFrame);micAnimFrame=null;}
+  if(audioCtx){try{audioCtx.close();}catch(e){}audioCtx=null;}
 
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({
-      audio: { deviceId: { exact: deviceId }, echoCancellation: false, noiseSuppression: false }
+  document.querySelectorAll('.cam-chip').forEach((e,j)=>e.classList.toggle('active',j===i));
+
+  const lbl=document.getElementById('mLbl');
+  const recBtn=document.getElementById('recBtn');
+  const playBtn=document.getElementById('playBtn');
+  const recStatus=document.getElementById('recStatus');
+
+  // Limpa playback anterior
+  micLastBlob=null;
+  if(playBtn){playBtn.disabled=true;playBtn.style.color='var(--muted)';}
+  const audio=document.getElementById('recAudio');
+  if(audio){audio.style.display='none';audio.src='';}
+  if(recStatus) recStatus.textContent='';
+
+  try{
+    const s=await navigator.mediaDevices.getUserMedia({
+      audio:{deviceId:{exact:did},echoCancellation:false,noiseSuppression:false,autoGainControl:false},
+      video:false
     });
-    activeStream = stream;
-    const track = stream.getAudioTracks()[0];
-    if (label) label.textContent = track.label || 'Microfone ativo — fale agora';
+    activeStream=s;
+    const tk=s.getAudioTracks()[0];
+    if(lbl) lbl.textContent=(tk.label||'Microfone '+i)+' — fale para ver a onda';
+    if(recBtn) recBtn.disabled=false;
 
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    const source = audioCtx.createMediaStreamSource(stream);
-    micAnalyser = audioCtx.createAnalyser();
-    micAnalyser.fftSize = 256;
-    source.connect(micAnalyser);
+    // Web Audio para waveform + dB meter
+    audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+    const src=audioCtx.createMediaStreamSource(s);
+    const an=audioCtx.createAnalyser();an.fftSize=512;an.smoothingTimeConstant=0.8;
+    src.connect(an);
 
-    drawWaveform();
-  } catch(e) {
-    if (label) label.textContent = 'Erro: ' + e.message;
-  }
-}
+    const canvas=document.getElementById('wc');if(!canvas)return;
+    const ctx=canvas.getContext('2d');
+    const buf=new Uint8Array(an.frequencyBinCount);
+    const freqBuf=new Uint8Array(an.frequencyBinCount);
 
-function drawWaveform() {
-  const canvas = document.getElementById('waveCanvas');
-  if (!canvas || !micAnalyser) return;
-  const ctx = canvas.getContext('2d');
-  const bufferLen = micAnalyser.frequencyBinCount;
-  const dataArray = new Uint8Array(bufferLen);
+    (function frame(){
+      micAnimFrame=requestAnimationFrame(frame);
+      if(!an||!document.getElementById('wc'))return;
 
-  function draw() {
-    micAnimFrame = requestAnimationFrame(draw);
-    if (!micAnalyser || !document.getElementById('waveCanvas')) return;
-    micAnalyser.getByteTimeDomainData(dataArray);
+      // Waveform
+      an.getByteTimeDomainData(buf);
+      const W=canvas.width,H=canvas.height;
+      ctx.fillStyle='#0f1520';ctx.fillRect(0,0,W,H);
 
-    const W = canvas.width, H = canvas.height;
-    ctx.fillStyle = '#080c10';
-    ctx.fillRect(0, 0, W, H);
+      // Grade sutil
+      ctx.strokeStyle='#1e2d3d';ctx.lineWidth=1;
+      ctx.beginPath();ctx.moveTo(0,H/2);ctx.lineTo(W,H/2);ctx.stroke();
 
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = '#00e5a0';
-    ctx.beginPath();
-
-    const sliceWidth = W / bufferLen;
-    let x = 0;
-    for (let i = 0; i < bufferLen; i++) {
-      const v = dataArray[i] / 128.0;
-      const y = (v * H) / 2;
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-      x += sliceWidth;
-    }
-    ctx.lineTo(W, H / 2);
-    ctx.stroke();
-  }
-  draw();
-}
-
-// ════════════════════════════════════════════════════════════════════
-// TEST: TOUCH
-// ════════════════════════════════════════════════════════════════════
-function testTouch() {
-  maxTouchPoints = 0;
-  setDesc('Toque e arraste dentro da área abaixo. Use vários dedos ao mesmo tempo para testar multitouch.');
-  setZone(`
-    <canvas id="touchCanvas" width="400" height="220"></canvas>
-    <div id="touchInfo" style="font-size:12px;color:var(--muted)">
-      Toque máximo simultâneo: <strong id="touchMax">0</strong> dedos
-      &nbsp;|&nbsp; Suporte declarado: <strong>${navigator.maxTouchPoints || 'N/A'}</strong>
-    </div>
-    <button class="btn-warn" onclick="clearTouchCanvas()" style="font-size:11px;padding:6px 14px">Limpar</button>
-  `);
-
-  setupTouchCanvas();
-  showVerdict();
-}
-
-function setupTouchCanvas() {
-  const canvas = document.getElementById('touchCanvas');
-  if (!canvas) return;
-  const ctx = canvas.getContext('2d');
-  ctx.fillStyle = '#0f1520';
-  ctx.fillRect(0,0, canvas.width, canvas.height);
-  ctx.strokeStyle = '#1e2d3d';
-  ctx.setLineDash([4,8]);
-  ctx.strokeRect(2,2, canvas.width-4, canvas.height-4);
-  ctx.setLineDash([]);
-  ctx.fillStyle = '#5a7a9a';
-  ctx.font = '13px JetBrains Mono';
-  ctx.textAlign = 'center';
-  ctx.fillText('Toque aqui com vários dedos', canvas.width/2, canvas.height/2);
-
-  const colors = ['#00e5a0','#00b4ff','#ffaa00','#ff3b5c','#a855f7','#f97316','#06b6d4','#84cc16','#ec4899','#f59e0b'];
-  const activePointers = {};
-
-  function onStart(e) {
-    e.preventDefault();
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    const touches = e.changedTouches || [e];
-    Array.from(touches).forEach(t => {
-      const x = (t.clientX - rect.left) * scaleX;
-      const y = (t.clientY - rect.top) * scaleY;
-      activePointers[t.identifier ?? 0] = { x, y, color: colors[(Object.keys(activePointers).length) % colors.length] };
-    });
-    updateTouchCount();
-  }
-
-  function onMove(e) {
-    e.preventDefault();
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    const touches = e.changedTouches || [e];
-    Array.from(touches).forEach(t => {
-      const x = (t.clientX - rect.left) * scaleX;
-      const y = (t.clientY - rect.top) * scaleY;
-      const prev = activePointers[t.identifier ?? 0];
-      if (prev) {
-        ctx.beginPath();
-        ctx.strokeStyle = prev.color;
-        ctx.lineWidth = 3;
-        ctx.lineCap = 'round';
-        ctx.moveTo(prev.x, prev.y);
-        ctx.lineTo(x, y);
-        ctx.stroke();
-        activePointers[t.identifier ?? 0] = { x, y, color: prev.color };
+      // Onda
+      ctx.lineWidth=2;ctx.strokeStyle='#00e5a0';ctx.beginPath();
+      const sw=W/buf.length;let x=0;
+      for(let j=0;j<buf.length;j++){
+        const v=(buf[j]-128)/128;
+        const y=H/2+v*(H/2*.9);
+        if(!j)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+        x+=sw;
       }
-    });
-  }
+      ctx.stroke();
 
-  function onEnd(e) {
-    e.preventDefault();
-    const touches = e.changedTouches || [e];
-    Array.from(touches).forEach(t => { delete activePointers[t.identifier ?? 0]; });
-  }
+      // dB meter
+      an.getByteFrequencyData(freqBuf);
+      const rms=freqBuf.reduce((a,b)=>a+b,0)/freqBuf.length;
+      const pct=Math.min(100,Math.round(rms/128*100));
+      const db=rms>0?Math.round(20*Math.log10(rms/255)):-60;
+      const meter=document.getElementById('dbMeter');
+      const dbLbl=document.getElementById('dbLabel');
+      if(meter) meter.style.width=pct+'%';
+      if(dbLbl) dbLbl.textContent=db+' dB';
+    })();
 
-  function updateTouchCount() {
-    const count = Object.keys(activePointers).length;
-    if (count > maxTouchPoints) maxTouchPoints = count;
-    const el = document.getElementById('touchMax');
-    if (el) el.textContent = maxTouchPoints;
+  }catch(e){
+    if(lbl) lbl.textContent='Erro: '+e.message;
+    if(recBtn) recBtn.disabled=true;
   }
-
-  canvas.addEventListener('touchstart', onStart, { passive: false });
-  canvas.addEventListener('touchmove', onMove, { passive: false });
-  canvas.addEventListener('touchend', onEnd, { passive: false });
-  canvas.addEventListener('touchcancel', onEnd, { passive: false });
-  canvas.addEventListener('mousedown', onStart);
-  canvas.addEventListener('mousemove', (e) => { if (e.buttons) onMove(e); });
-  canvas.addEventListener('mouseup', onEnd);
 }
 
-function clearTouchCanvas() {
-  const canvas = document.getElementById('touchCanvas');
-  if (!canvas) return;
-  const ctx = canvas.getContext('2d');
-  ctx.fillStyle = '#0f1520';
-  ctx.fillRect(0,0,canvas.width,canvas.height);
-}
+async function startMicRec(){
+  if(micRecording||!activeStream)return;
 
-// ════════════════════════════════════════════════════════════════════
-// TEST: NETWORK / SIM
-// ════════════════════════════════════════════════════════════════════
-function testNetwork() {
-  setDesc('Analisando conexão de rede e sinal. O browser não acessa o sinal SIM diretamente, mas detecta o tipo e qualidade da conexão.');
+  const recBtn=document.getElementById('recBtn');
+  const playBtn=document.getElementById('playBtn');
+  const recStatus=document.getElementById('recStatus');
+  const audio=document.getElementById('recAudio');
 
-  const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
-  const online = navigator.onLine;
+  // Limpa playback anterior
+  if(audio){audio.style.display='none';audio.src='';}
+  if(playBtn){playBtn.disabled=true;playBtn.style.color='var(--muted)';}
+  micLastBlob=null;
+  micChunks=[];
 
-  let type = 'Desconhecido';
-  let effectiveType = '—';
-  let downlink = '—';
-  let rtt = '—';
-  let simLikely = false;
+  // Escolhe formato suportado
+  const mime=['audio/webm;codecs=opus','audio/webm','audio/ogg;codecs=opus','audio/mp4'].find(m=>{
+    try{return MediaRecorder.isTypeSupported(m);}catch(e){return false;}
+  })||'';
 
-  if (conn) {
-    type = conn.type || 'desconhecido';
-    effectiveType = conn.effectiveType || '—';
-    downlink = conn.downlink ? conn.downlink + ' Mbps' : '—';
-    rtt = conn.rtt ? conn.rtt + ' ms' : '—';
-    simLikely = type === 'cellular' || ['2g','3g','4g'].includes(effectiveType);
+  try{
+    micRecorder=new MediaRecorder(activeStream,mime?{mimeType:mime}:{});
+  }catch(e){
+    if(recStatus) recStatus.textContent='MediaRecorder não suportado: '+e.message;
+    return;
   }
 
-  // Run speed test
-  const speedStart = Date.now();
-  const img = new Image();
-  img.onload = () => {
-    const elapsed = (Date.now() - speedStart) / 1000;
-    const size = 1.1; // approx KB
-    const speed = (size / elapsed * 8).toFixed(1);
-    const el = document.getElementById('pingResult');
-    if (el) el.textContent = elapsed < 1 ? `${Math.round(elapsed*1000)} ms latência` : `${elapsed.toFixed(2)}s — lento`;
+  micRecorder.ondataavailable=e=>{if(e.data&&e.data.size>0)micChunks.push(e.data);};
+  micRecorder.onstop=()=>{
+    micRecording=false;
+    if(micChunks.length){
+      micLastBlob=new Blob(micChunks,{type:mime||'audio/webm'});
+      const url=URL.createObjectURL(micLastBlob);
+      if(audio){audio.src=url;audio.style.display='block';}
+      if(playBtn){playBtn.disabled=false;playBtn.style.cssText='flex:1;background:rgba(0,229,160,.15);color:var(--accent);border:1px solid var(--accent);font-family:var(--sans);font-weight:700;font-size:14px;padding:14px 28px;border-radius:4px;cursor:pointer';}
+      if(recStatus) recStatus.innerHTML='✅ Gravação concluída! Clique em <strong>▶ Ouvir</strong> para reproduzir.';
+    }
+    if(recBtn){recBtn.textContent='⏺ Gravar 5s';recBtn.disabled=false;}
   };
-  img.onerror = () => {};
-  img.src = 'https://www.google.com/favicon.ico?_=' + Date.now();
 
-  const bars = [1,2,3,4,5].map((b,i) => {
-    const active = simLikely && i < 4 ? 'active' : (online && !simLikely && i < 3 ? 'active' : '');
-    return `<div class="signal-bar ${active}" style="height:${8+i*6}px"></div>`;
-  }).join('');
+  micRecorder.start(100);
+  micRecording=true;
+  if(recBtn){recBtn.disabled=true;recBtn.textContent='⏹ Gravando...';}
 
-  setZone(`
-    <div class="signal-bars">${bars}</div>
-    <div class="info-grid">
-      <div class="info-card">
-        <div class="info-card-label">Status</div>
-        <div class="info-card-value" style="font-size:16px;color:${online?'var(--pass)':'var(--fail)'}">${online ? '🟢 Online' : '🔴 Offline'}</div>
-      </div>
-      <div class="info-card">
-        <div class="info-card-label">Tipo</div>
-        <div class="info-card-value" style="font-size:14px">${type}</div>
-      </div>
-      <div class="info-card">
-        <div class="info-card-label">Qualidade</div>
-        <div class="info-card-value" style="font-size:14px">${effectiveType.toUpperCase()}</div>
-      </div>
-      <div class="info-card">
-        <div class="info-card-label">Velocidade</div>
-        <div class="info-card-value" style="font-size:14px">${downlink}</div>
-      </div>
-      <div class="info-card">
-        <div class="info-card-label">Latência RTT</div>
-        <div class="info-card-value" style="font-size:14px">${rtt}</div>
-      </div>
-      <div class="info-card">
-        <div class="info-card-label">Ping Real</div>
-        <div class="info-card-value" style="font-size:14px" id="pingResult">Medindo...</div>
-      </div>
-    </div>
-    <div style="font-size:10px;color:var(--muted);text-align:center;line-height:1.7">
-      ⚠️ Sinal SIM em dBm não é acessível via browser por restrições do sistema operacional.<br>
-      ${simLikely ? '✅ Conexão celular detectada — SIM provavelmente presente' : ''}
-    </div>
-  `);
-
-  showVerdict(`
-    <div class="verdict-row">
-      <button class="btn-pass" onclick="recordResult('pass','Tipo: ${type} / ${effectiveType} / ${downlink}')">✅ Rede OK</button>
-      <button class="btn-fail" onclick="recordResult('fail','Sem conexão ou sinal ruim')">❌ Problema</button>
-    </div>
-  `);
-}
-
-// ════════════════════════════════════════════════════════════════════
-// TEST: WI-FI
-// ════════════════════════════════════════════════════════════════════
-function testWifi() {
-  const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
-  const type = conn ? conn.type : null;
-  const isWifi = type === 'wifi';
-  const online = navigator.onLine;
-
-  setDesc('Verificando conexão Wi-Fi. Certifique-se de que o Wi-Fi está ativado no celular.');
-  setZone(`
-    <div class="big-icon">📡</div>
-    <div class="info-grid">
-      <div class="info-card">
-        <div class="info-card-label">Wi-Fi Detectado</div>
-        <div class="info-card-value" style="color:${isWifi?'var(--pass)':'var(--warn)'}">${isWifi ? '✅ Sim' : '⚠️ Incerto'}</div>
-      </div>
-      <div class="info-card">
-        <div class="info-card-label">Tipo Detectado</div>
-        <div class="info-card-value" style="font-size:14px">${type || 'N/A'}</div>
-      </div>
-      <div class="info-card">
-        <div class="info-card-label">Internet</div>
-        <div class="info-card-value" style="color:${online?'var(--pass)':'var(--fail)'};font-size:14px">${online?'Sim':'Não'}</div>
-      </div>
-      <div class="info-card">
-        <div class="info-card-label">Downlink</div>
-        <div class="info-card-value" style="font-size:14px">${conn&&conn.downlink?conn.downlink+' Mbps':'N/A'}</div>
-      </div>
-    </div>
-    <div style="font-size:10px;color:var(--muted);text-align:center;line-height:1.7">
-      Browsers não acessam SSID/senha ou dBm do Wi-Fi por segurança.<br>
-      ${isWifi ? '✅ Confirmado: usando Wi-Fi' : 'Verifique se está no Wi-Fi nas configurações do celular.'}
-    </div>
-  `);
-  showVerdict(`
-    <div class="verdict-row">
-      <button class="btn-pass" onclick="recordResult('pass','Wi-Fi: ${isWifi?'detectado':'incerto via browser'}')">✅ Wi-Fi OK</button>
-      <button class="btn-fail" onclick="recordResult('fail','Wi-Fi desligado ou sem sinal')">❌ Problema</button>
-    </div>
-  `);
-}
-
-// ════════════════════════════════════════════════════════════════════
-// TEST: BLUETOOTH
-// ════════════════════════════════════════════════════════════════════
-async function testBluetooth() {
-  setDesc('Vamos verificar o Bluetooth. O browser irá abrir o seletor de dispositivos — se o BT estiver desligado, o sistema pedirá para ativar.');
-
-  const hasBT = 'bluetooth' in navigator;
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-
-  if (isIOS) {
-    setZone(`
-      <div class="big-icon">🔵</div>
-      <div style="font-size:13px;color:var(--warn);text-align:center;line-height:1.7">
-        ⚠️ Safari/iOS não suporta Web Bluetooth API.<br>
-        Para testar Bluetooth em iOS, verifique nas configurações do sistema.
-      </div>
-    `);
-    showVerdict(`
-      <div class="verdict-row">
-        <button class="btn-pass" onclick="recordResult('warn','iOS — Web Bluetooth não suportado')">⚠️ Pulei (iOS)</button>
-        <button class="btn-fail" onclick="recordResult('fail','Bluetooth com problema')">❌ Problema</button>
-      </div>
-    `);
-    return;
-  }
-
-  if (!hasBT) {
-    setZone(`<p style="color:var(--fail)">Web Bluetooth API não disponível neste browser.</p>`);
-    showVerdict();
-    return;
-  }
-
-  setZone(`
-    <div class="big-icon">🔵</div>
-    <button class="btn-action" id="btBtn" onclick="scanBluetooth()">Escanear Dispositivos Bluetooth</button>
-    <div id="btStatus" style="font-size:12px;color:var(--muted);text-align:center">Pronto — o seletor de BT irá abrir</div>
-  `);
-  showVerdict();
-}
-
-async function scanBluetooth() {
-  const btn = document.getElementById('btBtn');
-  const status = document.getElementById('btStatus');
-  if (btn) btn.disabled = true;
-  if (status) status.textContent = 'Abrindo seletor de dispositivos...';
-
-  try {
-    const device = await navigator.bluetooth.requestDevice({ acceptAllDevices: true });
-    if (status) status.innerHTML = `✅ Dispositivo encontrado: <strong style="color:var(--accent)">${device.name || 'Desconhecido'}</strong><br>ID: ${device.id}`;
-    results['bluetooth'] = { status: 'pass', detail: 'Dispositivo: ' + (device.name || device.id), label: 'Bluetooth', emoji: '🔵', category: 'Conectividade' };
-  } catch(e) {
-    if (e.name === 'NotFoundError') {
-      if (status) status.textContent = 'Nenhum dispositivo selecionado (cancelado).';
-    } else if (e.name === 'NotSupportedError') {
-      if (status) status.textContent = 'Bluetooth desativado no dispositivo.';
+  // Countdown 5 segundos
+  let remaining=5;
+  if(recStatus) recStatus.innerHTML=`<span style="color:var(--accent);font-size:14px;font-weight:700">⏺ ${remaining}s</span> — fale agora!`;
+  micCountdownTimer=setInterval(()=>{
+    remaining--;
+    if(remaining>0){
+      if(recStatus) recStatus.innerHTML=`<span style="color:var(--accent);font-size:14px;font-weight:700">⏺ ${remaining}s</span> — fale agora!`;
     } else {
-      if (status) status.textContent = e.message;
+      clearInterval(micCountdownTimer);
+      if(micRecorder&&micRecorder.state==='recording') micRecorder.stop();
     }
-  }
-  if (btn) btn.disabled = false;
+  },1000);
 }
 
-// ════════════════════════════════════════════════════════════════════
-// TEST: FLASH
-// ════════════════════════════════════════════════════════════════════
-async function testFlash() {
-  setDesc('Vamos ativar o flash (lanterna) da câmera traseira. Pressione o botão abaixo.');
-  setZone(`
-    <div class="torch-zone" id="torchZone" onclick="toggleTorch()">🔦</div>
-    <div id="torchStatus" style="font-size:12px;color:var(--muted)">Clique para ligar/desligar o flash</div>
-    <button class="btn-action" onclick="toggleTorch()" id="torchBtn">Ligar Flash</button>
-  `);
-  showVerdict();
+function stopMicRec(cancel=false){
+  if(micCountdownTimer){clearInterval(micCountdownTimer);micCountdownTimer=null;}
+  if(micRecorder&&micRecorder.state!=='inactive'){
+    try{micRecorder.stop();}catch(e){}
+  }
+  micRecording=false;
+  if(cancel){
+    const rs=document.getElementById('recStatus');
+    if(rs) rs.textContent='Gravação cancelada.';
+  }
 }
 
-async function toggleTorch() {
-  const status = document.getElementById('torchStatus');
-  const zone = document.getElementById('torchZone');
-  const btn = document.getElementById('torchBtn');
-
-  if (torchActive) {
-    turnOffTorch();
-    if (status) status.textContent = 'Flash desligado';
-    if (zone) zone.classList.remove('on');
-    if (btn) btn.textContent = 'Ligar Flash';
-    return;
-  }
-
-  if (status) status.textContent = 'Ativando câmera para flash...';
-
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'environment', advanced: [{ torch: true }] }
+function playMicRec(){
+  const audio=document.getElementById('recAudio');
+  if(audio&&micLastBlob){
+    audio.style.display='block';
+    audio.currentTime=0;
+    audio.play().catch(e=>{
+      const rs=document.getElementById('recStatus');
+      if(rs) rs.textContent='Erro ao reproduzir: '+e.message;
     });
-    activeStream = stream;
-    torchTrack = stream.getVideoTracks()[0];
-
-    try {
-      await torchTrack.applyConstraints({ advanced: [{ torch: true }] });
-      torchActive = true;
-      if (zone) zone.classList.add('on');
-      if (status) status.textContent = '✅ Flash ligado! Você viu o flash acender?';
-      if (btn) btn.textContent = 'Desligar Flash';
-    } catch(e2) {
-      if (status) status.textContent = '⚠️ Flash não suportado neste device/browser: ' + e2.message;
-    }
-  } catch(e) {
-    if (status) status.textContent = 'Erro: ' + e.message;
   }
 }
 
-function turnOffTorch() {
-  if (torchTrack) {
-    try { torchTrack.applyConstraints({ advanced: [{ torch: false }] }); } catch(e){}
-  }
-  torchActive = false;
-  torchTrack = null;
-  stopStream();
+// ══════════════════════════════════════════════
+// 5. TOUCH — FULLSCREEN 3-PHASE
+// ══════════════════════════════════════════════
+function testTouch(){
+  setDesc(`Teste de touch em tela cheia com <strong>3 fases</strong>:<br>Fase 1: grade de alvos | Fase 2: multitouch | Fase 3: desenho livre.<br>Suporte declarado: <strong style="color:var(--accent)">${navigator.maxTouchPoints||0} pontos</strong> simultâneos.`);
+  setZone(`<div class="big-icon">👆</div><button class="btn-action" onclick="openTouch()">Abrir Teste de Touch (Tela Cheia)</button>`);
+  document.getElementById('verdict').innerHTML='';
 }
-
-// ════════════════════════════════════════════════════════════════════
-// TEST: FINGERPRINT
-// ════════════════════════════════════════════════════════════════════
-async function testFingerprint() {
-  setDesc('Vamos testar o sensor biométrico (impressão digital) usando Web Authentication API. Pressione o botão e coloque o dedo no sensor.');
-
-  const available = window.PublicKeyCredential && PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable;
-
-  if (!available) {
-    setZone('<p style="color:var(--fail)">WebAuthn não disponível neste browser.</p>');
-    showVerdict();
-    return;
-  }
-
-  setZone(`
-    <div class="fingerprint-zone" id="fpZone">🔏</div>
-    <div id="fpStatus" style="font-size:13px;color:var(--muted);text-align:center;line-height:1.7">Verificando disponibilidade do sensor...</div>
-    <button class="btn-action" id="fpBtn" onclick="doFingerprint()" disabled>Verificando...</button>
-  `);
-
-  try {
-    const ok = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
-    const fpBtn = document.getElementById('fpBtn');
-    const fpStatus = document.getElementById('fpStatus');
-
-    if (ok) {
-      if (fpBtn) { fpBtn.disabled = false; fpBtn.textContent = 'Escanear Impressão Digital'; }
-      if (fpStatus) fpStatus.textContent = 'Sensor biométrico detectado. Clique e coloque o dedo.';
-    } else {
-      if (fpBtn) { fpBtn.textContent = 'Sensor não detectado'; }
-      if (fpStatus) fpStatus.textContent = '⚠️ Nenhum autenticador biométrico disponível neste dispositivo.';
-    }
-  } catch(e) {
-    const fpStatus = document.getElementById('fpStatus');
-    if (fpStatus) fpStatus.textContent = 'Erro: ' + e.message;
-  }
-
-  showVerdict();
+function openTouch(){
+  touchHit=0;touchTotal=0;touchMaxSimul=0;touchPhase=1;touchPointers={};
+  const fs=document.getElementById('touchFS');fs.classList.add('visible');
+  [1,2,3].forEach(i=>document.getElementById('tfsBtnP'+i).classList.toggle('active',i===1));
+  buildTargets();
 }
-
-async function doFingerprint() {
-  const zone = document.getElementById('fpZone');
-  const status = document.getElementById('fpStatus');
-  const btn = document.getElementById('fpBtn');
-  if (btn) btn.disabled = true;
-  if (zone) zone.className = 'fingerprint-zone scanning';
-  if (status) status.textContent = 'Coloque o dedo no sensor...';
-
-  try {
-    const challenge = new Uint8Array(32);
-    window.crypto.getRandomValues(challenge);
-
-    const credential = await navigator.credentials.create({
-      publicKey: {
-        challenge,
-        rp: { name: 'PhoneDiag', id: window.location.hostname || 'localhost' },
-        user: { id: new Uint8Array(16), name: 'test@phonediag', displayName: 'Test User' },
-        pubKeyCredParams: [{ alg: -7, type: 'public-key' }],
-        authenticatorSelection: { authenticatorAttachment: 'platform', userVerification: 'required' },
-        timeout: 30000,
-      }
+function setTouchPhase(p){
+  touchPhase=p;
+  [1,2,3].forEach(i=>document.getElementById('tfsBtnP'+i).classList.toggle('active',i===p));
+  if(p===1)buildTargets();else if(p===2)buildMulti();else buildDraw();
+}
+function updStats(){
+  const el=document.getElementById('tfsStats');if(!el)return;
+  if(touchPhase===1)el.textContent=`${touchHit}/${touchTotal} alvos`;
+  else if(touchPhase===2)el.textContent=`Máx: ${touchMaxSimul} dedos`;
+  else el.textContent='Desenhe!';
+}
+function buildTargets(){
+  document.getElementById('tfsTitle').textContent='Fase 1 — Toque em todos os alvos';
+  const area=document.getElementById('tfsArea');area.innerHTML='';area.style.touchAction='none';
+  const W=area.clientWidth||window.innerWidth;
+  const H=area.clientHeight||(window.innerHeight-120);
+  // 5x6 grid + 4 extreme corners
+  const targets=[];
+  const cols=5,rows=6;
+  for(let r=0;r<rows;r++)for(let c=0;c<cols;c++)targets.push({x:Math.round((c+.5)/cols*W),y:Math.round((r+.5)/rows*H),id:`${r}_${c}`});
+  // hard corners
+  [[.04,.04],[.96,.04],[.04,.96],[.96,.96],[.5,.5]].forEach(([xr,yr],i)=>targets.push({x:Math.round(xr*W),y:Math.round(yr*H),id:'x'+i}));
+  touchTotal=targets.length;touchHit=0;updStats();
+  targets.forEach((t,i)=>{
+    const d=document.createElement('div');d.className='touch-target';d.id='tg_'+t.id;
+    d.style.left=t.x+'px';d.style.top=t.y+'px';d.textContent=String(i+1);
+    const hit=()=>{if(d.classList.contains('hit'))return;d.classList.add('hit');touchHit++;updStats();if(touchHit===touchTotal)setTimeout(()=>toast('✅ Todos os alvos!'),80);};
+    d.addEventListener('touchstart',e=>{e.preventDefault();hit();},{passive:false});
+    d.addEventListener('mousedown',hit);
+    area.appendChild(d);
+  });
+}
+function buildMulti(){
+  document.getElementById('tfsTitle').textContent='Fase 2 — Pressione vários dedos ao mesmo tempo';
+  const area=document.getElementById('tfsArea');area.innerHTML='';area.style.touchAction='none';
+  area.innerHTML=`<div class="tfs-instruction"><div class="icon">✋</div><p>Pressione todos os dedos<br>ao mesmo tempo na tela</p><div class="tfs-big-num" id="multiN">0</div><div style="font-size:12px;color:var(--muted)">dedos agora</div></div>`;
+  const handler=e=>{
+    e.preventDefault();
+    const n=e.touches.length;
+    if(n>touchMaxSimul){touchMaxSimul=n;updStats();}
+    const mn=document.getElementById('multiN');if(mn)mn.textContent=n;
+    area.querySelectorAll('.multi-ring').forEach(r=>r.remove());
+    Array.from(e.touches).forEach((t,i)=>{
+      const r=document.createElement('div');r.className='multi-ring';
+      const c=TOUCH_COLORS[i%TOUCH_COLORS.length];
+      r.style.cssText=`left:${t.clientX}px;top:${t.clientY}px;width:64px;height:64px;border-color:${c};background:${c}22;`;
+      area.appendChild(r);
     });
+  };
+  area.addEventListener('touchstart',handler,{passive:false});
+  area.addEventListener('touchmove',handler,{passive:false});
+  area.addEventListener('touchend',handler,{passive:false});
+}
+function buildDraw(){
+  document.getElementById('tfsTitle').textContent='Fase 3 — Desenho livre multicolor';
+  const area=document.getElementById('tfsArea');area.innerHTML='';area.style.touchAction='none';
+  const instr=document.createElement('div');instr.className='tfs-instruction';
+  instr.innerHTML='<div class="icon">🖊️</div><p>Arraste os dedos para desenhar<br>Cada dedo tem uma cor diferente</p>';
+  area.appendChild(instr);
+  const canvas=document.createElement('canvas');canvas.className='draw-canvas';
+  canvas.width=area.clientWidth||window.innerWidth;canvas.height=area.clientHeight||(window.innerHeight-120);
+  area.appendChild(canvas);
+  const ctx=canvas.getContext('2d');ctx.lineWidth=4;ctx.lineCap='round';
+  canvas.addEventListener('touchstart',e=>{e.preventDefault();const r=canvas.getBoundingClientRect();Array.from(e.changedTouches).forEach(t=>{touchPointers[t.identifier]={x:t.clientX-r.left,y:t.clientY-r.top,c:TOUCH_COLORS[Object.keys(touchPointers).length%TOUCH_COLORS.length]};});if(instr.parentNode)instr.remove();},{passive:false});
+  canvas.addEventListener('touchmove',e=>{e.preventDefault();const r=canvas.getBoundingClientRect();Array.from(e.changedTouches).forEach(t=>{const p=touchPointers[t.identifier];if(!p)return;const nx=t.clientX-r.left,ny=t.clientY-r.top;ctx.strokeStyle=p.c;ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(nx,ny);ctx.stroke();touchPointers[t.identifier]={x:nx,y:ny,c:p.c};});},{passive:false});
+  canvas.addEventListener('touchend',e=>{e.preventDefault();Array.from(e.changedTouches).forEach(t=>delete touchPointers[t.identifier]);},{passive:false});
+}
+function finishTouch(){
+  document.getElementById('touchFS').classList.remove('visible');
+  const pct=touchTotal>0?Math.round(touchHit/touchTotal*100):0;
+  const detail=`${touchHit}/${touchTotal} alvos (${pct}%) | Multitouch máx: ${touchMaxSimul} dedos`;
+  const st=pct>=80&&touchMaxSimul>0?'pass':pct>=40?'warn':'fail';
+  setZone(`<div class="info-grid"><div class="info-card"><div class="info-card-label">Alvos</div><div class="info-card-value">${touchHit}/${touchTotal}</div></div><div class="info-card"><div class="info-card-label">Cobertura</div><div class="info-card-value">${pct}%</div></div><div class="info-card"><div class="info-card-label">Multitouch máx</div><div class="info-card-value">${touchMaxSimul}</div></div><div class="info-card"><div class="info-card-label">Declarado pelo SO</div><div class="info-card-value">${navigator.maxTouchPoints||0}</div></div></div><div style="font-size:12px;color:${pct>=80?'var(--pass)':'var(--warn)'};margin-top:4px">${pct>=80?'✅ Tela respondendo bem':'⚠️ Cobertura parcial'}</div>`);
+  showVerdict(`<div class="verdict-row"><button class="btn-pass" onclick="record('${st}','${detail}')">Confirmar Resultado</button><button class="btn-fail" onclick="record('fail','touch com problema')">❌ Problema</button></div>`);
+}
 
-    if (zone) zone.className = 'fingerprint-zone success';
-    if (status) status.innerHTML = '✅ Biometria autenticada com sucesso!<br><span style="color:var(--muted);font-size:11px">Credential ID: ' + credential.id.substring(0,20) + '...</span>';
-    results['fingerprint'] = { status: 'pass', detail: 'WebAuthn autenticado', label: 'Impressão Digital', emoji: '🔏', category: 'Segurança' };
-  } catch(e) {
-    if (zone) zone.className = 'fingerprint-zone error-fp';
-    if (e.name === 'NotAllowedError') {
-      if (status) status.textContent = 'Cancelado pelo usuário ou autenticação falhou.';
-    } else {
-      if (status) status.textContent = 'Erro: ' + e.message;
-    }
-    if (btn) btn.disabled = false;
+// ══════════════════════════════════════════════
+// 6. NETWORK — LIVE + DETALHADO
+// ══════════════════════════════════════════════
+function testNetwork(){
+  setDesc('Analisando rede em tempo real. Dados atualizam automaticamente ao mudar de conexão.');
+  renderNet();
+  const upd=()=>renderNet();
+  addNetListener(window,'online',upd);addNetListener(window,'offline',upd);
+  if(navigator.connection)addNetListener(navigator.connection,'change',upd);
+}
+function netGen(conn){
+  if(!conn)return'Desconhecido';
+  const et=conn.effectiveType||'',type=conn.type||'',dl=conn.downlink||0;
+  if(type==='wifi')return'Wi-Fi';
+  if(type==='cellular'||['2g','3g','4g'].includes(et)){
+    if(dl>30)return'5G ✦ (estimado)';
+    if(dl>10)return'4G/LTE+';
+    if(dl>2)return'4G/LTE';
+    if(et==='3g')return'3G';
+    if(et==='2g'||et==='slow-2g')return'2G';
+    return'4G';
+  }
+  return et.toUpperCase()||type||'Desconhecido';
+}
+function detectCarrier(){
+  // Try to match carrier hints in UA string (some Android browsers)
+  const ua=navigator.userAgent;
+  const patterns=[/\b(Vivo|Claro|TIM|Oi|NET|Nextel|T-Mobile|AT&T|Verizon|Orange|Vodafone|O2|EE|BSNL|Airtel|Jio|SingTel|Telstra)\b/i];
+  for(const p of patterns){const m=ua.match(p);if(m)return m[0];}
+  return null;
+}
+function renderNet(){
+  const conn=navigator.connection||navigator.mozConnection||navigator.webkitConnection;
+  const online=navigator.onLine;
+  const type=conn?conn.type||'—':'—';
+  const et=conn?conn.effectiveType||'—':'—';
+  const dl=conn&&conn.downlink!=null?conn.downlink:null;
+  const rtt=conn&&conn.rtt!=null?conn.rtt:null;
+  const dlMax=conn&&conn.downlinkMax!=null?conn.downlinkMax:null;
+  const saveData=conn&&conn.saveData;
+  const gen=conn?netGen(conn):'—';
+  const carrier=detectCarrier();
+  const cellular=type==='cellular'||(et&&['2g','3g','4g'].includes(et)&&type!=='wifi');
+  const is5G=gen.includes('5G');
+
+  let sigBars=0;
+  if(online){if(rtt!=null&&dl!=null){if(rtt<50&&dl>10)sigBars=5;else if(rtt<100&&dl>5)sigBars=4;else if(rtt<200&&dl>1)sigBars=3;else if(rtt<500)sigBars=2;else sigBars=1;}else sigBars=3;}
+  const bars=[0,1,2,3,4].map(i=>`<div class="signal-bar ${i<sigBars?'active':''}" style="height:${8+i*5}px"></div>`).join('');
+
+  let simBox='';
+  if(cellular)simBox=`<div class="net-ok">✅ Conexão celular detectada${is5G?' — 5G estimado por velocidade':''} — SIM ativo</div>`;
+  else if(type==='wifi')simBox=`<div style="font-size:11px;color:var(--muted);text-align:center">📡 Wi-Fi ativo. Para testar SIM, desative o Wi-Fi.</div>`;
+  else if(!online)simBox=`<div class="net-alert">🔴 Dispositivo OFFLINE — sem sinal ou modo avião</div>`;
+
+  const genColor=is5G?'#a855f7':et==='4g'||type==='wifi'?'var(--accent)':et==='3g'?'var(--warn)':'var(--fail)';
+
+  const zone=document.getElementById('zone');if(!zone)return;
+  zone.innerHTML=`
+    <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
+      <div class="signal-bars">${bars}</div>
+      <span class="live-badge">AO VIVO</span>
+    </div>
+    ${simBox}
+    <div class="info-grid" style="width:100%">
+      <div class="info-card"><div class="info-card-label">Status</div><div class="info-card-value" style="font-size:14px;color:${online?'var(--pass)':'var(--fail)'}">${online?'🟢 Online':'🔴 Offline'}</div></div>
+      <div class="info-card"><div class="info-card-label">Geração</div><div class="info-card-value" style="font-size:13px;color:${genColor}">${gen}</div></div>
+      <div class="info-card"><div class="info-card-label">Tipo (API)</div><div class="info-card-value" style="font-size:13px">${type}</div></div>
+      <div class="info-card"><div class="info-card-label">Effective Type</div><div class="info-card-value" style="font-size:13px">${et.toUpperCase()}</div></div>
+      <div class="info-card"><div class="info-card-label">Downlink est.</div><div class="info-card-value" style="font-size:13px">${dl!=null?dl+' Mbps':'N/A'}</div></div>
+      <div class="info-card"><div class="info-card-label">RTT Latência</div><div class="info-card-value" style="font-size:13px">${rtt!=null?rtt+' ms':'N/A'}</div></div>
+      <div class="info-card"><div class="info-card-label">Downlink Máx</div><div class="info-card-value" style="font-size:13px">${dlMax!=null?dlMax+' Mbps':'N/A'}</div></div>
+      <div class="info-card"><div class="info-card-label">Operadora</div><div class="info-card-value" style="font-size:11px;color:${carrier?'var(--accent)':'var(--muted)'}">${carrier||'Não detectável*'}</div></div>
+    </div>
+    <div style="font-size:10px;color:var(--muted);line-height:1.9;width:100%">
+      ${saveData?'⚡ Economia de dados ativo.<br>':''}
+      ${is5G?'🔵 5G estimado via downlink >30Mbps (browsers reportam 4G mesmo em 5G).<br>':''}
+      * Operadora e dBm reais bloqueados pelo SO — não acessíveis via browser.<br>
+      * SIM detectado via tipo de conexão celular.
+    </div>
+  `;
+  const va=document.getElementById('verdict');
+  if(va&&!va.querySelector('.btn-pass')){
+    const gs=gen.replace(/'/g,'');
+    va.innerHTML=`<div class="verdict-row"><button class="btn-pass" onclick="record('pass','${online?'Online':'Offline'} | ${gs} | ${dl||'?'} Mbps')">✅ Rede OK</button><button class="btn-fail" onclick="record('fail','sem conexão')">❌ Problema</button></div>`;
   }
 }
 
-// ════════════════════════════════════════════════════════════════════
-// TEST: BATTERY
-// ════════════════════════════════════════════════════════════════════
-async function testBattery() {
-  setDesc('Verificando status da bateria e se está carregando.');
-
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-
-  if (isIOS) {
-    setZone(`
-      <div class="big-icon">🔋</div>
-      <p style="color:var(--warn);font-size:13px;text-align:center;line-height:1.7">
-        ⚠️ Apple removeu a Battery Status API do Safari por privacidade.<br>
-        Verifique o status da bateria na barra de status do iOS.
-      </p>
-    `);
-    showVerdict(`
-      <div class="verdict-row">
-        <button class="btn-pass" onclick="recordResult('warn','iOS — Battery API não disponível')">⚠️ iOS (Aceitar)</button>
-        <button class="btn-fail" onclick="recordResult('fail','Bateria com problema')">❌ Problema</button>
-      </div>
-    `);
-    return;
-  }
-
-  if (!navigator.getBattery) {
-    setZone('<p style="color:var(--fail)">Battery Status API não disponível neste browser.</p>');
-    showVerdict();
-    return;
-  }
-
-  try {
-    const battery = await navigator.getBattery();
-    const pct = Math.round(battery.level * 100);
-    const charging = battery.charging;
-    const fillColor = pct > 50 ? '#00e5a0' : pct > 20 ? '#ffaa00' : '#ff3b5c';
-
-    function updateBatUI() {
-      const pctNow = Math.round(battery.level * 100);
-      const chargingNow = battery.charging;
-      const el = document.getElementById('batDisplay');
-      if (el) el.innerHTML = buildBatHTML(pctNow, chargingNow);
-    }
-
-    battery.addEventListener('levelchange', updateBatUI);
-    battery.addEventListener('chargingchange', updateBatUI);
-
-    function buildBatHTML(p, c) {
-      const fc = p > 50 ? '#00e5a0' : p > 20 ? '#ffaa00' : '#ff3b5c';
-      return `
-        <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px">
-          <div class="battery-viz" style="color:${fc}">
-            <div class="battery-fill" style="width:${p}%;background:${fc}"></div>
-          </div>
-          <div>
-            <div style="font-size:32px;font-weight:700;color:${fc}">${p}%</div>
-            <div style="font-size:11px;color:var(--muted)">${c ? '⚡ Carregando' : '🔋 Na bateria'}</div>
-          </div>
-        </div>
-        <div class="info-grid">
-          <div class="info-card">
-            <div class="info-card-label">Carregando</div>
-            <div class="info-card-value" style="font-size:16px;color:${c?'var(--pass)':'var(--muted)'}">${c ? '✅ Sim' : 'Não'}</div>
-          </div>
-          <div class="info-card">
-            <div class="info-card-label">Tempo restante</div>
-            <div class="info-card-value" style="font-size:13px">
-              ${c ? (battery.chargingTime !== Infinity ? Math.round(battery.chargingTime/60)+'min' : '—') 
-                  : (battery.dischargingTime !== Infinity ? Math.round(battery.dischargingTime/60)+'min' : '—')}
-            </div>
-          </div>
-        </div>
-        <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:8px">
-          ${c ? '✅ Carregamento detectado e funcionando' : 'Conecte o carregador e reconecte para testar'}
-        </div>
-      `;
-    }
-
-    setZone(`<div id="batDisplay">${buildBatHTML(pct, charging)}</div>`);
-    showVerdict(`
-      <div class="verdict-row">
-        <button class="btn-pass" onclick="recordResult('pass','${pct}% ${charging?'carregando':'descarregando'}')">✅ Bateria OK</button>
-        <button class="btn-fail" onclick="recordResult('fail','problema na bateria/carregamento')">❌ Problema</button>
-      </div>
-    `);
-  } catch(e) {
-    setZone(`<p style="color:var(--fail)">Erro: ${e.message}</p>`);
-    showVerdict();
-  }
+// ══════════════════════════════════════════════
+// 7. WI-FI — LIVE
+// ══════════════════════════════════════════════
+function testWifi(){
+  setDesc('Monitorando Wi-Fi ao vivo. Ligue/desligue o Wi-Fi e veja atualizar instantaneamente.');
+  renderWifi();
+  const upd=()=>renderWifi();
+  addNetListener(window,'online',upd);addNetListener(window,'offline',upd);
+  if(navigator.connection)addNetListener(navigator.connection,'change',upd);
+}
+function renderWifi(){
+  const conn=navigator.connection||navigator.mozConnection||navigator.webkitConnection;
+  const type=conn?conn.type||'':'';
+  const isWifi=type==='wifi';
+  const online=navigator.onLine;
+  const dl=conn&&conn.downlink!=null?conn.downlink:null;
+  const rtt=conn&&conn.rtt!=null?conn.rtt:null;
+  let qual='—',qc='var(--muted)';
+  if(isWifi&&dl!=null){if(dl>50){qual='Excelente';qc='var(--pass)';}else if(dl>10){qual='Boa';qc='var(--accent)';}else if(dl>2){qual='Razoável';qc='var(--warn)';}else{qual='Fraca';qc='var(--fail)';}}
+  let box='';
+  if(!online)box='<div class="net-alert">🔴 Sem conexão</div>';
+  else if(isWifi)box='<div class="net-ok">✅ Conectado via Wi-Fi</div>';
+  else if(type==='cellular')box='<div style="padding:10px;background:rgba(255,170,0,.08);border:1px solid rgba(255,170,0,.3);border-radius:6px;font-size:12px;color:var(--warn);text-align:center">⚠️ Usando dados móveis — Wi-Fi parece desligado</div>';
+  const zone=document.getElementById('zone');if(!zone)return;
+  zone.innerHTML=`
+    <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
+      <div style="font-size:36px">${isWifi?'📡':'📵'}</div>
+      <span class="live-badge">AO VIVO</span>
+    </div>
+    ${box}
+    <div class="info-grid" style="width:100%">
+      <div class="info-card"><div class="info-card-label">Wi-Fi ativo</div><div class="info-card-value" style="font-size:14px;color:${isWifi?'var(--pass)':'var(--fail)'}">${isWifi?'✅ Sim':'❌ Não'}</div></div>
+      <div class="info-card"><div class="info-card-label">Qualidade</div><div class="info-card-value" style="font-size:14px;color:${qc}">${qual}</div></div>
+      <div class="info-card"><div class="info-card-label">Downlink</div><div class="info-card-value" style="font-size:13px">${dl!=null?dl+' Mbps':'N/A'}</div></div>
+      <div class="info-card"><div class="info-card-label">Latência</div><div class="info-card-value" style="font-size:13px">${rtt!=null?rtt+' ms':'N/A'}</div></div>
+    </div>
+    <div style="font-size:10px;color:var(--muted);text-align:center;line-height:1.7">SSID, senha e dBm não acessíveis via browser por segurança.</div>
+  `;
+  const va=document.getElementById('verdict');
+  if(va&&!va.querySelector('.btn-pass'))va.innerHTML=`<div class="verdict-row"><button class="btn-pass" onclick="record('pass','${isWifi?'Wi-Fi: '+qual:type||'sem wifi'}')">✅ Wi-Fi OK</button><button class="btn-fail" onclick="record('fail','Wi-Fi sem sinal')">❌ Problema</button></div>`;
 }
 
-// ════════════════════════════════════════════════════════════════════
-// TEST: THERMAL / CPU
-// ════════════════════════════════════════════════════════════════════
-async function testThermal() {
-  setDesc('Vamos estimar o estado térmico/CPU. Usamos a Compute Pressure API (se disponível) + estimativa via benchmark.');
-
-  setZone(`
-    <div class="big-icon">🌡️</div>
-    <button class="btn-action" onclick="runThermalTest()">Iniciar Análise Térmica</button>
-    <div id="thermalStatus" style="font-size:12px;color:var(--muted);text-align:center">Pronto para iniciar</div>
-  `);
+// ══════════════════════════════════════════════
+// 8. BLUETOOTH
+// ══════════════════════════════════════════════
+async function testBluetooth(){
+  const ios=/iPad|iPhone|iPod/.test(navigator.userAgent);
+  if(ios){setDesc('Safari/iOS não suporta Web Bluetooth API.');setZone(`<div class="big-icon">🔵</div><p style="color:var(--warn);font-size:13px;text-align:center;line-height:1.7">⚠️ Não disponível no Safari/iOS.<br>Verifique nas configurações do sistema.</p>`);showVerdict(`<div class="verdict-row"><button class="btn-pass" onclick="record('warn','iOS sem Web BT')">⚠️ iOS</button><button class="btn-fail" onclick="record('fail','BT com problema')">❌ Falhou</button></div>`);return;}
+  if(!('bluetooth' in navigator)){setZone('<p style="color:var(--fail)">Web Bluetooth não disponível.</p>');showVerdict();return;}
+  setDesc('O seletor de dispositivos BT irá abrir. Se o BT estiver desligado, o SO pedirá para ativar.');
+  setZone(`<div class="big-icon">🔵</div><button class="btn-action" id="btBtn" onclick="scanBT()">Escanear Dispositivos BT</button><div id="btSt" style="font-size:12px;color:var(--muted);text-align:center">Pressione para abrir o seletor</div>`);
   showVerdict();
 }
+async function scanBT(){
+  const btn=document.getElementById('btBtn'),st=document.getElementById('btSt');
+  if(btn)btn.disabled=true;if(st)st.textContent='Abrindo seletor...';
+  try{
+    const d=await navigator.bluetooth.requestDevice({acceptAllDevices:true});
+    if(st)st.innerHTML=`✅ Encontrado: <strong style="color:var(--accent)">${d.name||'Sem nome'}</strong>`;
+    results['bt']={status:'pass',detail:'BT: '+(d.name||d.id),label:'Bluetooth',emoji:'🔵',category:'Conectividade'};
+  }catch(e){if(st)st.textContent=e.name==='NotFoundError'?'Nenhum selecionado.':'Erro: '+e.message;}
+  if(btn)btn.disabled=false;
+}
 
-async function runThermalTest() {
-  const btn = document.querySelector('#testZone .btn-action');
-  const status = document.getElementById('thermalStatus');
-  if (btn) btn.disabled = true;
-  if (status) status.textContent = '⚙️ Rodando benchmark (3 segundos)...';
+// ══════════════════════════════════════════════
+// 9. FLASH
+// ══════════════════════════════════════════════
+function testFlash(){
+  setDesc('Ativa o flash (LED) da câmera traseira. Toque para ligar/desligar.');
+  setZone(`<div class="torch-zone" id="tz">🔦</div><button class="btn-action" id="tBtn" onclick="togTorch()">Ligar Flash</button><div id="tSt" style="font-size:12px;color:var(--muted)">Pronto</div>`);
+  showVerdict();
+}
+async function togTorch(){
+  const z=document.getElementById('tz'),b=document.getElementById('tBtn'),s=document.getElementById('tSt');
+  if(torchActive){turnOffTorch();if(z)z.classList.remove('on');if(b)b.textContent='Ligar Flash';if(s)s.textContent='Desligado';return;}
+  if(b)b.disabled=true;if(s)s.textContent='Acessando câmera...';
+  try{
+    const st=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
+    activeStream=st;torchTrack=st.getVideoTracks()[0];
+    await torchTrack.applyConstraints({advanced:[{torch:true}]});
+    torchActive=true;if(z)z.classList.add('on');if(b){b.disabled=false;b.textContent='Desligar Flash';}if(s)s.textContent='✅ Flash ligado! Você viu o LED?';
+  }catch(e){if(b)b.disabled=false;if(s)s.textContent='Não suportado ou erro: '+e.message;}
+}
+function turnOffTorch(){
+  if(torchTrack){try{torchTrack.applyConstraints({advanced:[{torch:false}]});}catch(e){}}
+  torchActive=false;torchTrack=null;
+  if(activeStream){activeStream.getTracks().forEach(t=>t.stop());activeStream=null;}
+}
 
-  // 1. Try Compute Pressure API
-  let pressureLevel = null;
-  if ('PressureObserver' in window) {
-    try {
-      await new Promise((res) => {
-        pressureObserver = new PressureObserver((records) => {
-          pressureLevel = records[records.length - 1].state;
-          res();
-        }, { sampleInterval: 1000 });
-        pressureObserver.observe('cpu');
-        setTimeout(res, 3000);
+// ══════════════════════════════════════════════
+// 10. FINGERPRINT — PRÉ-DETECÇÃO
+// ══════════════════════════════════════════════
+async function testFingerprint(){
+  setDesc('Detectando sensor biométrico no dispositivo...');
+  setZone('<div class="spinner"></div>');
+  let hasBio=false;
+  if(window.PublicKeyCredential&&PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable){
+    try{hasBio=await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();}catch(e){}
+  }
+  const ua=navigator.userAgent;
+  let bioType=hasBio?(/iphone|ipad/i.test(ua)?'Face ID / Touch ID (iOS)':/android/i.test(ua)?'Impressão Digital / Face (Android)':'Biometria disponível'):'Nenhum sensor detectado';
+  setDesc(hasBio
+    ?`<strong style="color:var(--pass)">✅ Sensor biométrico detectado!</strong><br>${bioType}. Clique para autenticar.`
+    :`<strong style="color:var(--fail)">❌ Nenhum sensor biométrico</strong> encontrado neste device/browser.`);
+  setZone(`
+    <div class="fingerprint-zone" id="fpZ">🔏</div>
+    <div class="biometric-chip ${hasBio?'avail':'unavail'}">${hasBio?'✅ '+bioType:'❌ Sem sensor'}</div>
+    <div id="fpSt" style="font-size:12px;color:var(--muted);text-align:center;line-height:1.7">${hasBio?'Clique no botão e coloque o dedo':'Biometria indisponível neste device'}</div>
+    <button class="btn-action" id="fpBtn" onclick="doFP()" ${hasBio?'':'disabled'}>${hasBio?'Autenticar Biometria':'Sem sensor disponível'}</button>
+  `);
+  showVerdict(`<div class="verdict-row"><button class="btn-pass" onclick="record('${hasBio?'pass':'warn'}','${hasBio?bioType:'Sem sensor detectado'}')">✅ ${hasBio?'Funcionou':'Sem Biometria'}</button><button class="btn-fail" onclick="record('fail','sensor falhou')">❌ Falhou</button></div>`);
+}
+async function doFP(){
+  const z=document.getElementById('fpZ'),s=document.getElementById('fpSt'),b=document.getElementById('fpBtn');
+  if(b)b.disabled=true;if(z)z.className='fingerprint-zone scanning';if(s)s.textContent='Coloque o dedo...';
+  try{
+    const ch=new Uint8Array(32);window.crypto.getRandomValues(ch);
+    const host=window.location.hostname||'localhost';
+    await navigator.credentials.create({publicKey:{challenge:ch,rp:{name:'PhoneDiag',id:host},user:{id:new Uint8Array(16),name:'test',displayName:'Test'},pubKeyCredParams:[{alg:-7,type:'public-key'},{alg:-257,type:'public-key'}],authenticatorSelection:{authenticatorAttachment:'platform',userVerification:'required'},timeout:30000}});
+    if(z)z.className='fingerprint-zone success';if(s)s.innerHTML='✅ <strong>Autenticado com sucesso!</strong>';
+    results['bio']={status:'pass',detail:'WebAuthn OK',label:'Impressão Digital',emoji:'🔏',category:'Segurança'};
+  }catch(e){if(z)z.className='fingerprint-zone error-fp';if(s)s.textContent=e.name==='NotAllowedError'?'Cancelado.':'Erro: '+e.message;if(b)b.disabled=false;}
+}
+
+// ══════════════════════════════════════════════
+// 11. BATTERY — LIVE + mA ESTIMADO
+// ══════════════════════════════════════════════
+async function testBattery(){
+  const ios=/iPad|iPhone|iPod/.test(navigator.userAgent);
+  if(ios||!navigator.getBattery){
+    setDesc(ios?'Apple removeu Battery API do Safari por privacidade.':'Battery API não disponível.');
+    setZone(`<div class="big-icon">🔋</div><p style="color:var(--warn);font-size:13px;text-align:center;line-height:1.7">⚠️ ${ios?'iOS/Safari não expõe dados de bateria.':'API indisponível neste browser.'}</p>`);
+    showVerdict(`<div class="verdict-row"><button class="btn-pass" onclick="record('warn','${ios?'iOS sem Battery API':'API indisponível'}')">⚠️ Aceitar</button><button class="btn-fail" onclick="record('fail','bateria com problema')">❌ Problema</button></div>`);
+    return;
+  }
+  setDesc('Monitorando bateria <strong>em tempo real</strong>. Conecte/desconecte o carregador para ver atualizar.');
+  try{
+    batteryObj=await navigator.getBattery();
+    batteryHistory=[{lv:batteryObj.level,ts:Date.now()}];
+    renderBat();
+    const upd=()=>renderBat();
+    ['levelchange','chargingchange','chargingtimechange','dischargingtimechange'].forEach(ev=>batteryObj.addEventListener(ev,upd));
+    batteryTimer=setInterval(()=>{if(!batteryObj)return;batteryHistory.push({lv:batteryObj.level,ts:Date.now()});if(batteryHistory.length>12)batteryHistory.shift();renderBat();},5000);
+  }catch(e){setZone(`<p style="color:var(--fail)">Erro: ${e.message}</p>`);showVerdict();}
+}
+function estMA(){
+  if(batteryHistory.length<2)return null;
+  const f=batteryHistory[0],l=batteryHistory[batteryHistory.length-1];
+  const dLv=f.lv-l.lv;const dH=(l.ts-f.ts)/3600000;
+  if(dH<0.001||dLv<=0)return null;
+  return Math.round(dLv*3500/dH); // assume 3500mAh
+}
+function renderBat(){
+  if(!batteryObj)return;
+  const pct=Math.round(batteryObj.level*100);
+  const ch=batteryObj.charging;
+  const fc=pct>50?'#00e5a0':pct>20?'#ffaa00':'#ff3b5c';
+  const ct=batteryObj.chargingTime,dt=batteryObj.dischargingTime;
+  const ma=estMA();
+  const zone=document.getElementById('zone');if(!zone)return;
+  zone.innerHTML=`
+    <div style="display:flex;align-items:center;gap:20px;margin-bottom:6px">
+      <div class="battery-viz" style="color:${fc}">
+        <div class="battery-fill" style="width:${pct}%;background:${fc}"></div>
+        ${ch?'<div class="charging-bolt">⚡</div>':''}
+      </div>
+      <div>
+        <div style="font-size:36px;font-weight:900;color:${fc};line-height:1">${pct}%</div>
+        <div style="font-size:11px;color:${ch?'var(--accent)':'var(--muted)'}">${ch?'⚡ Carregando':'🔋 Na bateria'}</div>
+        <span class="live-badge" style="margin-top:4px;display:inline-flex">AO VIVO</span>
+      </div>
+    </div>
+    <div class="info-grid" style="width:100%">
+      <div class="info-card"><div class="info-card-label">Carregando</div><div class="info-card-value" style="font-size:14px;color:${ch?'var(--pass)':'var(--muted)'}">${ch?'✅ Sim':'Não'}</div></div>
+      <div class="info-card"><div class="info-card-label">${ch?'Tempo p/ 100%':'Autonomia est.'}</div><div class="info-card-value" style="font-size:13px">${ch?(ct!==Infinity&&ct?Math.round(ct/60)+'min':'—'):(dt!==Infinity&&dt?Math.round(dt/60)+'min':'—')}</div></div>
+      <div class="info-card"><div class="info-card-label">Corrente est.</div><div class="info-card-value" style="font-size:13px;color:${ma?'var(--accent)':'var(--muted)'}">${ma?ma+' mA':'Calculando...'}</div></div>
+      <div class="info-card"><div class="info-card-label">Temp. Bateria</div><div class="info-card-value" style="font-size:11px;color:var(--muted)">Bloqueado pelo SO</div></div>
+    </div>
+    <div style="font-size:10px;color:var(--muted);line-height:1.9;width:100%">
+      ⚡ mA estimado por queda de nível (±20%, assume bat. 3500mAh).<br>
+      🌡️ Temperatura real da bateria: não acessível via browser (requer app nativo).<br>
+      ${ch?'Desconecte para medir descarga.':'Conecte o carregador para testar carregamento.'}
+    </div>
+  `;
+  const va=document.getElementById('verdict');
+  if(va&&!va.querySelector('.btn-pass'))va.innerHTML=`<div class="verdict-row"><button class="btn-pass" onclick="record('pass','${pct}% ${ch?'carregando':'bat'}${ma?' / est.'+ma+'mA':''}')">✅ Bateria OK</button><button class="btn-fail" onclick="record('fail','problema')">❌ Problema</button></div>`;
+}
+
+// ══════════════════════════════════════════════
+// 12. THERMAL — CORRIGIDO + REAL
+// ══════════════════════════════════════════════
+function testThermal(){
+  setDesc('Mede a pressão real do CPU via Compute Pressure API + benchmark calibrado.<br><small style="color:var(--muted)">Temperatura em °C do chip/bateria não é acessível via browser.</small>');
+  setZone(`<div class="big-icon">🌡️</div><button class="btn-action" onclick="runThermal()">Iniciar Análise (3s)</button><div id="tSt" style="font-size:12px;color:var(--muted);text-align:center">Benchmark breve para medir resposta do CPU</div>`);
+  showVerdict();
+}
+async function runThermal(){
+  const btn=document.querySelector('#zone .btn-action'),st=document.getElementById('tSt');
+  if(btn)btn.disabled=true;if(st)st.textContent='⚙️ Rodando benchmark...';
+
+  // 1. Compute Pressure API
+  let pState=null;
+  const hasCP='PressureObserver' in window;
+  if(hasCP){
+    try{
+      await new Promise(res=>{
+        pressureObs=new PressureObserver(recs=>{pState=recs[recs.length-1].state;},{sampleInterval:200});
+        pressureObs.observe('cpu');setTimeout(res,3100);
       });
-    } catch(e) {}
+    }catch(e){}
   }
 
-  // 2. CPU Benchmark
-  const start = performance.now();
-  let ops = 0;
-  const endTime = start + 3000;
-  while (performance.now() < endTime) {
-    Math.sqrt(Math.random() * 999999);
-    ops++;
-  }
-  const elapsed = performance.now() - start;
-  const opsPerSec = Math.round(ops / (elapsed / 1000));
+  // 2. Calibrated benchmark: warm-up first, then measure ratio
+  const w0=performance.now();let wo=0;
+  while(performance.now()-w0<300){Math.sin(Math.random()*999);wo++;}
+  const baseRate=wo/0.3;
 
-  // 3. Battery drain estimation
-  let batteryInfo = '';
-  try {
-    if (navigator.getBattery) {
-      const bat = await navigator.getBattery();
-      batteryInfo = bat.charging ? 'Conectado (carregando)' : `${Math.round(bat.level*100)}% — na bateria`;
-    }
-  } catch(e) {}
+  const r0=performance.now();let ro=0;
+  while(performance.now()-r0<3000){Math.sin(Math.random()*999);ro++;}
+  const runRate=ro/3;
+  const ratio=Math.round(runRate/baseRate*100);
 
-  // Estimate thermal state
-  let thermalState = 'Normal';
-  let thermalColor = 'var(--pass)';
-  let thermalIcon = '🟢';
-  if (pressureLevel === 'serious' || pressureLevel === 'critical') {
-    thermalState = pressureLevel === 'critical' ? 'Crítico ⚠️' : 'Elevado ⚠️';
-    thermalColor = pressureLevel === 'critical' ? 'var(--fail)' : 'var(--warn)';
-    thermalIcon = pressureLevel === 'critical' ? '🔴' : '🟡';
-  } else if (opsPerSec < 2000000) {
-    thermalState = 'Possível throttling';
-    thermalColor = 'var(--warn)';
-    thermalIcon = '🟡';
+  // 3. Battery hint
+  let batHint='N/A';
+  try{if(navigator.getBattery){const b=await navigator.getBattery();batHint=b.charging?'Carregando':''+Math.round(b.level*100)+'% na bateria';}}catch(e){}
+
+  // 4. State — ONLY from real data
+  let tState,tColor,tIcon,tDesc;
+  if(pState==='critical'){tState='Crítico';tColor='var(--fail)';tIcon='🔴';tDesc='CPU sob pressão crítica — throttling severo';}
+  else if(pState==='serious'){tState='Elevado';tColor='var(--warn)';tIcon='🟡';tDesc='CPU sob pressão elevada';}
+  else if(pState==='fair'){tState='Moderado';tColor='var(--warn)';tIcon='🟡';tDesc='CPU com carga moderada';}
+  else if(pState==='nominal'){tState='Normal';tColor='var(--pass)';tIcon='🟢';tDesc='CPU em estado nominal (Compute Pressure API)';}
+  else{
+    // Sem Compute Pressure — usar ratio com threshold mais conservador
+    if(ratio<55){tState='Throttling detectado';tColor='var(--fail)';tIcon='🔴';tDesc=`Performance ${100-ratio}% abaixo do warm-up inicial`;}
+    else if(ratio<75){tState='Possível throttling';tColor='var(--warn)';tIcon='🟡';tDesc='Performance levemente reduzida vs warm-up';}
+    else{tState='Normal';tColor='var(--pass)';tIcon='🟢';tDesc='Nenhum sinal de throttling detectado';}
   }
 
-  const zone = document.getElementById('testZone');
-  if (!zone) return;
-  zone.innerHTML = `
-    <div style="font-size:36px">${thermalIcon}</div>
+  const zone=document.getElementById('zone');if(!zone)return;
+  zone.innerHTML=`
+    <div style="font-size:40px">${tIcon}</div>
     <div class="info-grid">
-      <div class="info-card">
-        <div class="info-card-label">Estado Térmico</div>
-        <div class="info-card-value" style="font-size:14px;color:${thermalColor}">${pressureLevel ? pressureLevel.toUpperCase() : thermalState}</div>
-      </div>
-      <div class="info-card">
-        <div class="info-card-label">Compute Pressure</div>
-        <div class="info-card-value" style="font-size:14px">${pressureLevel || 'Não disponível'}</div>
-      </div>
-      <div class="info-card">
-        <div class="info-card-label">Ops/s CPU</div>
-        <div class="info-card-value" style="font-size:13px">${(opsPerSec/1000000).toFixed(1)}M</div>
-      </div>
-      <div class="info-card">
-        <div class="info-card-label">Bateria</div>
-        <div class="info-card-value" style="font-size:11px">${batteryInfo || 'N/A'}</div>
-      </div>
+      <div class="info-card"><div class="info-card-label">Estado CPU</div><div class="info-card-value" style="font-size:13px;color:${tColor}">${tState}</div></div>
+      <div class="info-card"><div class="info-card-label">Compute Pressure</div><div class="info-card-value" style="font-size:12px;color:${hasCP&&pState?'var(--text)':'var(--muted)'}">${pState||'API indisponível'}</div></div>
+      <div class="info-card"><div class="info-card-label">Perf. sustentada</div><div class="info-card-value" style="font-size:14px;color:${ratio>=80?'var(--pass)':ratio>=60?'var(--warn)':'var(--fail)'}">${ratio}%</div></div>
+      <div class="info-card"><div class="info-card-label">Bateria</div><div class="info-card-value" style="font-size:11px">${batHint}</div></div>
     </div>
-    <div style="font-size:10px;color:var(--muted);text-align:center;line-height:1.7">
-      Temperatura real do chip não acessível via browser.<br>
-      Análise baseada em pressão de CPU e performance.
+    <div class="thermal-gauge"><div class="thermal-fill" style="width:${ratio}%;background:${tColor}"></div></div>
+    <div class="thermal-labels"><span>Throttling</span><span>Normal</span></div>
+    <div style="font-size:10px;color:var(--muted);text-align:center;line-height:1.9">
+      ${tDesc}<br>
+      🌡️ Temperatura em °C do chip e da bateria = não acessível via browser.<br>
+      ${!hasCP?'⚠️ Compute Pressure API não disponível neste browser (Chrome 115+).':'✅ Compute Pressure API ativa → '+pState}
     </div>
   `;
-
-  const detail = `Estado: ${pressureLevel || thermalState} / ${(opsPerSec/1000000).toFixed(1)}M ops/s`;
-  const ta = document.getElementById('verdictArea');
-  if (ta) ta.innerHTML = `
-    <div class="verdict-row">
-      <button class="btn-pass" onclick="recordResult('pass','${detail}')">✅ CPU Normal</button>
-      <button class="btn-fail" onclick="recordResult('fail','CPU com throttling ou aquecimento')">❌ Aquecendo</button>
-    </div>
-  `;
+  const detail=`${tState} | CP: ${pState||'N/A'} | Perf: ${ratio}%`;
+  const ta=document.getElementById('verdict');
+  if(ta)ta.innerHTML=`<div class="verdict-row"><button class="btn-pass" onclick="record('${pState==='critical'||ratio<55?'warn':'pass'}','${detail}')">✅ CPU ${tState}</button><button class="btn-fail" onclick="record('fail','CPU com problema')">❌ Problema</button></div>`;
 }
 
-// ════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════
 // RESULTS
-// ════════════════════════════════════════════════════════════════════
-function showResults() {
+// ══════════════════════════════════════════════
+function showResults(){
   showScreen('results');
-
-  const all = Object.values(results);
-  const passed = all.filter(r => r.status === 'pass').length;
-  const failed = all.filter(r => r.status === 'fail').length;
-  const skipped = all.filter(r => r.status === 'skip').length;
-  const warned = all.filter(r => r.status === 'warn').length;
-  const total = passed + failed + warned;
-  const pct = total > 0 ? Math.round((passed / (passed + failed)) * 100) : 0;
-
-  const scoreEl = document.getElementById('scoreDisplay');
-  scoreEl.textContent = pct + '%';
-  scoreEl.className = 'results-score ' + (pct >= 80 ? 'great' : pct >= 50 ? 'ok' : 'bad');
-
-  document.getElementById('passCount').textContent = passed + warned;
-  document.getElementById('failCount').textContent = failed;
-  document.getElementById('skipCount').textContent = skipped;
-
-  const list = document.getElementById('resultsList');
-  list.innerHTML = '';
-
-  const categories = [...new Set(all.map(r => r.category))];
-  categories.forEach(cat => {
-    const catResults = all.filter(r => r.category === cat);
-    const heading = document.createElement('div');
-    heading.className = 'results-section-title';
-    heading.textContent = cat;
-    list.appendChild(heading);
-
-    catResults.forEach(r => {
-      const statusMap = {
-        pass: { icon: '✅', cls: 'pass', badge: 'OK' },
-        fail: { icon: '❌', cls: 'fail', badge: 'FALHOU' },
-        skip: { icon: '⏭', cls: 'skip', badge: 'PULADO' },
-        warn: { icon: '⚠️', cls: 'warn', badge: 'PARCIAL' },
-      };
-      const s = statusMap[r.status] || statusMap['skip'];
-
-      const item = document.createElement('div');
-      item.className = 'result-item';
-      item.innerHTML = `
-        <div class="result-icon ${s.cls}">${r.emoji}</div>
-        <div class="result-info">
-          <div class="result-name">${r.label}</div>
-          <div class="result-detail">${r.detail || '—'}</div>
-        </div>
-        <div class="result-badge ${s.cls}">${s.badge}</div>
-      `;
+  const all=Object.values(results);
+  const passed=all.filter(r=>r.status==='pass').length;
+  const failed=all.filter(r=>r.status==='fail').length;
+  const skipped=all.filter(r=>r.status==='skip').length;
+  const pct=passed+failed>0?Math.round(passed/(passed+failed)*100):0;
+  const sc=document.getElementById('scoreDisplay');sc.textContent=pct+'%';sc.className='results-score '+(pct>=80?'great':pct>=50?'ok':'bad');
+  document.getElementById('passCount').textContent=passed+all.filter(r=>r.status==='warn').length;
+  document.getElementById('failCount').textContent=failed;
+  document.getElementById('skipCount').textContent=skipped;
+  const list=document.getElementById('resultsList');list.innerHTML='';
+  const cats=[...new Set(all.map(r=>r.category))];
+  cats.forEach(cat=>{
+    const cr=all.filter(r=>r.category===cat);
+    const h=document.createElement('div');h.className='results-section-title';h.textContent=cat;list.appendChild(h);
+    cr.forEach(r=>{
+      const sm={pass:{c:'pass',b:'OK'},fail:{c:'fail',b:'FALHOU'},skip:{c:'skip',b:'PULADO'},warn:{c:'warn',b:'PARCIAL'}};
+      const s=sm[r.status]||sm['skip'];
+      const item=document.createElement('div');item.className='result-item';
+      item.innerHTML=`<div class="result-icon ${s.c}">${r.emoji}</div><div class="result-info"><div class="result-name">${r.label}</div><div class="result-detail">${r.detail||'—'}</div></div><div class="result-badge ${s.c}">${s.b}</div>`;
       list.appendChild(item);
     });
   });
 }
 
-// ════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════
 // EXPORT
-// ════════════════════════════════════════════════════════════════════
-function exportReport() {
-  const all = Object.values(results);
-  const passed = all.filter(r => r.status === 'pass').length;
-  const failed = all.filter(r => r.status === 'fail').length;
-  const now = new Date().toLocaleString('pt-BR');
-
-  let txt = `╔══════════════════════════════════════════════╗
-║          PhoneDiag — Relatório de Diagnóstico          ║
-╚══════════════════════════════════════════════╝
-
-Data/Hora: ${now}
-Dispositivo: ${navigator.userAgent}
-Plataforma: ${navigator.platform || 'N/A'}
-Câmeras detectadas: ${deviceInfo.cameras.length}
-Microfones detectados: ${deviceInfo.microphones.length}
-
-───────────────────────────────────────────────
-RESUMO: ${passed} OK | ${failed} Falhou | ${all.filter(r=>r.status==='skip').length} Pulado
-───────────────────────────────────────────────
-
-RESULTADOS DETALHADOS:
-`;
-
-  all.forEach(r => {
-    const icon = r.status === 'pass' ? '✅' : r.status === 'fail' ? '❌' : r.status === 'warn' ? '⚠️' : '⏭';
-    txt += `\n${icon} [${r.category}] ${r.label}\n   → ${r.detail || 'Sem detalhes'}\n`;
-  });
-
-  txt += `\n───────────────────────────────────────────────\nGerado por PhoneDiag — https://phonediag.netlify.app\n`;
-
-  const blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `phonediag_${Date.now()}.txt`;
-  a.click();
-  URL.revokeObjectURL(url);
+// ══════════════════════════════════════════════
+function exportReport(){
+  const all=Object.values(results);
+  const now=new Date().toLocaleString('pt-BR');
+  let txt=`╔══════════════════════════════════════════╗\n║       PhoneDiag v2 — Relatório            ║\n╚══════════════════════════════════════════╝\n\nData: ${now}\nDevice: ${navigator.userAgent}\nCâmeras: ${devInfo.cameras.length} | Mics: ${devInfo.mics.length}\n\n──────────────────────\nRESULTADOS:\n`;
+  all.forEach(r=>{const ic=r.status==='pass'?'✅':r.status==='fail'?'❌':r.status==='warn'?'⚠️':'⏭';txt+=`\n${ic} [${r.category}] ${r.label}\n   → ${r.detail||'—'}\n`;});
+  txt+='\n──────────────────────\nGerado por PhoneDiag\n';
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([txt],{type:'text/plain;charset=utf-8'}));
+  a.download='phonediag_'+Date.now()+'.txt';a.click();
   toast('Relatório exportado!');
 }
 </script>
