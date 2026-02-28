@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>PhoneDiag — Diagnóstico de Hardware</title>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Syne:wght@400;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
   :root{--bg:#080c10;--bg2:#0d1218;--bg3:#121820;--card:#0f1520;--border:#1e2d3d;--accent:#00e5a0;--accent2:#00b4ff;--warn:#ffaa00;--danger:#ff3b5c;--text:#e8f0fe;--muted:#5a7a9a;--pass:#00e5a0;--fail:#ff3b5c;--skip:#5a7a9a;--mono:'JetBrains Mono',monospace;--sans:'Syne',sans-serif;}
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
@@ -35,6 +36,8 @@
   .btn-action:hover{filter:brightness(1.1);}
   .btn-action:disabled{opacity:.4;cursor:not-allowed;}
   .btn-warn{background:rgba(255,170,0,.1);color:var(--warn);font-family:var(--mono);font-size:11px;padding:8px 14px;border:1px solid rgba(255,170,0,.3);border-radius:4px;cursor:pointer;}
+  .btn-back{background:rgba(0,180,255,.08);color:var(--accent2);font-family:var(--mono);font-size:11px;padding:8px 14px;border:1px solid rgba(0,180,255,.3);border-radius:4px;cursor:pointer;display:inline-flex;align-items:center;gap:4px;transition:all .2s;}
+  .btn-back:hover{background:rgba(0,180,255,.18);}
   .btn-restart{background:rgba(0,180,255,.1);color:var(--accent2);font-family:var(--mono);font-size:11px;padding:8px 14px;border:1px solid rgba(0,180,255,.3);border-radius:4px;cursor:pointer;}
   .test-header{position:sticky;top:0;background:rgba(8,12,16,.95);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:14px 20px;z-index:10;}
   .test-header-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
@@ -180,6 +183,9 @@
     <span class="test-preview-tag">🔵 Bluetooth</span><span class="test-preview-tag">📶 Rede ao vivo</span>
     <span class="test-preview-tag">🔦 Flash</span><span class="test-preview-tag">🔋 Bateria+mA</span>
     <span class="test-preview-tag">🔏 Biometria</span><span class="test-preview-tag">🌡️ CPU real</span>
+    <span class="test-preview-tag">📡 NFC</span><span class="test-preview-tag">📍 GPS</span>
+    <span class="test-preview-tag">🔄 Giroscópio</span><span class="test-preview-tag">📳 Vibração</span>
+    <span class="test-preview-tag">🖥️ Pixels Mortos</span>
   </div>
   <button class="btn-primary" onclick="startDiag()">Iniciar Diagnóstico</button>
   <br><br>
@@ -211,9 +217,10 @@
   </div>
   <div class="results-list" id="resultsList"></div>
   <div class="results-actions">
-    <button class="btn-primary" onclick="exportReport()">Exportar Relatório</button>
+    <button class="btn-primary" onclick="exportPDF()">📄 Exportar PDF</button>
+    <button class="btn-secondary" onclick="exportReport()">📝 Exportar TXT</button>
     <button class="btn-secondary" onclick="restartDiag()">Novo Diagnóstico</button>
-    <p style="font-size:11px;color:var(--muted);text-align:center">Relatório salvo como .txt no seu dispositivo</p>
+    <p style="font-size:11px;color:var(--muted);text-align:center">PDF com logo Legacy + relatório completo</p>
   </div>
 </div>
 
@@ -255,9 +262,14 @@ const TESTS = [
   { id:'cameras',   label:'Câmeras',               category:'Visual',       emoji:'📷', fn:testCameras     },
   { id:'mics',      label:'Microfones',            category:'Áudio',        emoji:'🎤', fn:testMics        },
   { id:'touch',     label:'Tela Touch',            category:'Interface',    emoji:'👆', fn:testTouch       },
+  { id:'pixels',    label:'Pixels Mortos',         category:'Visual',       emoji:'🖥️', fn:testPixels      },
   { id:'network',   label:'Sinal de Rede / SIM',   category:'Conectividade',emoji:'📶', fn:testNetwork     },
   { id:'wifi',      label:'Wi-Fi',                 category:'Conectividade',emoji:'📡', fn:testWifi        },
   { id:'bt',        label:'Bluetooth',             category:'Conectividade',emoji:'🔵', fn:testBluetooth   },
+  { id:'nfc',       label:'NFC',                   category:'Conectividade',emoji:'📡', fn:testNFC         },
+  { id:'gps',       label:'GPS / Localização',     category:'Sensores',     emoji:'📍', fn:testGPS         },
+  { id:'motion',    label:'Acelerômetro / Giroscópio', category:'Sensores', emoji:'🔄', fn:testMotion      },
+  { id:'vibration', label:'Vibração',              category:'Hardware',     emoji:'📳', fn:testVibration   },
   { id:'flash',     label:'Flash / Lanterna',      category:'Hardware',     emoji:'🔦', fn:testFlash       },
   { id:'bio',       label:'Impressão Digital',     category:'Segurança',    emoji:'🔏', fn:testFingerprint },
   { id:'battery',   label:'Bateria & Carregamento',category:'Hardware',     emoji:'🔋', fn:testBattery     },
@@ -285,7 +297,8 @@ function loadTest(idx){
     <div class="test-zone" id="zone"><div class="spinner"></div></div>
     <div id="verdict"></div>
     <div class="action-row">
-      <button class="btn-restart" onclick="reloadTest()">🔄 Reiniciar teste</button>
+      <button class="btn-back" id="btnBack" onclick="goBack()" style="display:${idx>0?'inline-flex':'none'}">← Voltar</button>
+      <button class="btn-restart" onclick="reloadTest()">🔄 Reiniciar</button>
       <button class="btn-warn" onclick="skipTest()">⏭ Pular</button>
     </div>`;
   try{t.fn();}catch(e){setDesc('Erro: '+e.message);setZone(`<p style="color:var(--fail)">${e.message}</p>`);showVerdict();}
@@ -308,6 +321,15 @@ function skipTest(){
   results[t.id]={status:'skip',detail:'Pulado',label:t.label,emoji:t.emoji,category:t.category};
   cleanup();loadTest(currentTestIdx+1);
 }
+function goBack(){
+  if(currentTestIdx<=0)return;
+  const prev=currentTestIdx-1;
+  // Remove o resultado do teste anterior para permitir re-julgamento
+  const pt=TESTS[prev];
+  delete results[pt.id];
+  cleanup();
+  loadTest(prev);
+}
 
 // ══════════════════════════════════════════════
 // CLEANUP
@@ -328,6 +350,11 @@ function cleanup(){
   batteryHistory=[];
   document.getElementById('touchFS').classList.remove('visible');
   touchPointers={};
+  // novos sensores
+  if(motionListener){window.removeEventListener('devicemotion',motionListener);motionListener=null;}
+  if(orientListener){window.removeEventListener('deviceorientation',orientListener);orientListener=null;}
+  if(nfcReader){try{nfcReader.stop&&nfcReader.stop();}catch(e){}nfcReader=null;}
+  if(pixelOverlay){try{document.body.removeChild(pixelOverlay);}catch(e){}pixelOverlay=null;}
 }
 
 function getAC(){if(!audioCtx||audioCtx.state==='closed')audioCtx=new(window.AudioContext||window.webkitAudioContext)();return audioCtx;}
@@ -464,16 +491,28 @@ async function testCameras(){
 
 async function swCam(did, i){
   if(activeStream){activeStream.getTracks().forEach(t=>t.stop());activeStream=null;}
+  // Aguarda o SO liberar a câmera anterior antes de abrir a próxima
+  await new Promise(r=>setTimeout(r,250));
+
   document.querySelectorAll('.cam-chip').forEach((e,j)=>e.classList.toggle('active',j===i));
 
   const infoBox=document.getElementById('camInfoBox');
   if(infoBox) infoBox.innerHTML='<div style="font-size:11px;color:var(--muted)">Ativando câmera...</div>';
 
   try{
-    const s=await navigator.mediaDevices.getUserMedia({
-      video:{deviceId:{exact:did},width:{ideal:1920},height:{ideal:1080}},
-      audio:false
-    });
+    // Tenta primeiro com exact; se falhar, tenta ideal (câmeras auxiliares/TOF)
+    let s;
+    try{
+      s=await navigator.mediaDevices.getUserMedia({
+        video:{deviceId:{exact:did},width:{ideal:1920},height:{ideal:1080}},
+        audio:false
+      });
+    }catch(e1){
+      s=await navigator.mediaDevices.getUserMedia({
+        video:{deviceId:{ideal:did},width:{ideal:1280},height:{ideal:720}},
+        audio:false
+      });
+    }
     activeStream=s;
     const v=document.getElementById('vp');if(v)v.srcObject=s;
 
@@ -1059,8 +1098,11 @@ async function testBattery(){
 function estMA(){
   if(batteryHistory.length<2)return null;
   const f=batteryHistory[0],l=batteryHistory[batteryHistory.length-1];
-  const dLv=f.lv-l.lv;const dH=(l.ts-f.ts)/3600000;
-  if(dH<0.001||dLv<=0)return null;
+  const dH=(l.ts-f.ts)/3600000;
+  if(dH<0.001)return null;
+  // Descarregando: nível cai (f.lv > l.lv); Carregando: nível sobe (l.lv > f.lv)
+  const dLv=batteryObj&&batteryObj.charging ? (l.lv-f.lv) : (f.lv-l.lv);
+  if(dLv<=0)return null;
   return Math.round(dLv*3500/dH); // assume 3500mAh
 }
 function renderBat(){
@@ -1085,13 +1127,14 @@ function renderBat(){
     </div>
     <div class="info-grid" style="width:100%">
       <div class="info-card"><div class="info-card-label">Carregando</div><div class="info-card-value" style="font-size:14px;color:${ch?'var(--pass)':'var(--muted)'}">${ch?'✅ Sim':'Não'}</div></div>
-      <div class="info-card"><div class="info-card-label">${ch?'Tempo p/ 100%':'Autonomia est.'}</div><div class="info-card-value" style="font-size:13px">${ch?(ct!==Infinity&&ct?Math.round(ct/60)+'min':'—'):(dt!==Infinity&&dt?Math.round(dt/60)+'min':'—')}</div></div>
-      <div class="info-card"><div class="info-card-label">Corrente est.</div><div class="info-card-value" style="font-size:13px;color:${ma?'var(--accent)':'var(--muted)'}">${ma?ma+' mA':'Calculando...'}</div></div>
+      <div class="info-card"><div class="info-card-label">${ch?'Tempo p/ 100%':'Autonomia est.'}</div><div class="info-card-value" style="font-size:13px">${ch?(ct!==Infinity&&ct>0?Math.round(ct/60)+'min':'SO não informa'):(dt!==Infinity&&dt>0?Math.round(dt/60)+'min':'SO não informa')}</div></div>
+      <div class="info-card"><div class="info-card-label">Corrente est.</div><div class="info-card-value" style="font-size:13px;color:${ma?'var(--accent)':'var(--muted)'}">${ma?ma+' mA':(batteryHistory.length<2?'Aguardando delta...':'Variação insuficiente')}</div></div>
       <div class="info-card"><div class="info-card-label">Temp. Bateria</div><div class="info-card-value" style="font-size:11px;color:var(--muted)">Bloqueado pelo SO</div></div>
     </div>
     <div style="font-size:10px;color:var(--muted);line-height:1.9;width:100%">
-      ⚡ mA estimado por queda de nível (±20%, assume bat. 3500mAh).<br>
+      ⚡ mA estimado por variação de nível (±20%, assume bat. 3500mAh). Aguarda ~5min para acumular delta.<br>
       🌡️ Temperatura real da bateria: não acessível via browser (requer app nativo).<br>
+      ⏱️ Autonomia/tempo de carga: depende do SO informar — muitos Android retornam "desconhecido".<br>
       ${ch?'Desconecte para medir descarga.':'Conecte o carregador para testar carregamento.'}
     </div>
   `;
@@ -1202,8 +1245,310 @@ function showResults(){
 }
 
 // ══════════════════════════════════════════════
-// EXPORT
+// NFC — detecção + leitura
 // ══════════════════════════════════════════════
+async function testNFC(){
+  setDesc('Verificando suporte a NFC no dispositivo...');
+  if(!('NDEFReader' in window)){
+    setZone(`<div class="big-icon">📡</div><p style="color:var(--warn);font-size:13px;text-align:center;line-height:1.7">⚠️ Web NFC API não disponível neste browser.<br><small>Requer Chrome 89+ no Android. iOS não suporta.</small></p>`);
+    showVerdict(`<div class="verdict-row"><button class="btn-pass" onclick="record('warn','NFC API indisponível neste browser')">⚠️ Sem suporte</button><button class="btn-fail" onclick="record('fail','NFC com problema')">❌ Problema</button></div>`);
+    return;
+  }
+  setDesc('NFC detectado! Aproxime uma tag NFC do telefone para testar a leitura.');
+  setZone(`
+    <div class="big-icon">📡</div>
+    <div id="nfcStatus" style="font-size:13px;color:var(--muted);text-align:center">Aguardando tag NFC...</div>
+    <button class="btn-action" id="nfcBtn" onclick="startNFCScan()">Iniciar Leitura NFC</button>
+    <div id="nfcResult" style="width:100%"></div>
+  `);
+  showVerdict(`<div class="verdict-row"><button class="btn-pass" onclick="record('pass','NFC presente e funcional')">✅ NFC OK</button><button class="btn-fail" onclick="record('fail','NFC com problema')">❌ Falhou</button></div>`);
+}
+let nfcReader=null;
+async function startNFCScan(){
+  const btn=document.getElementById('nfcBtn');
+  const st=document.getElementById('nfcStatus');
+  const res=document.getElementById('nfcResult');
+  if(btn)btn.disabled=true;
+  if(st)st.innerHTML='<span class="status-dot active"></span> Escaneando — aproxime uma tag NFC...';
+  try{
+    nfcReader=new NDEFReader();
+    await nfcReader.scan();
+    nfcReader.onreading=({message,serialNumber})=>{
+      const records=message.records.map(r=>{
+        if(r.recordType==='text'){const dec=new TextDecoder(r.encoding||'utf-8');return dec.decode(r.data);}
+        return r.recordType;
+      });
+      if(res)res.innerHTML=`<div class="net-ok" style="margin-top:8px">✅ Tag lida!<br><small>Serial: ${serialNumber||'—'}<br>Conteúdo: ${records.join(', ')||'—'}</small></div>`;
+      if(st)st.textContent='Tag NFC detectada com sucesso!';
+      results['nfc']={status:'pass',detail:'NFC OK — Serial: '+(serialNumber||'—'),label:'NFC',emoji:'📡',category:'Conectividade'};
+    };
+    nfcReader.onreadingerror=()=>{if(st)st.textContent='Erro ao ler tag. Tente novamente.';};
+  }catch(e){
+    if(st)st.innerHTML=`<span style="color:var(--fail)">Erro: ${e.message}</span>`;
+    if(btn){btn.disabled=false;btn.textContent='Tentar novamente';}
+  }
+}
+
+// ══════════════════════════════════════════════
+// GPS / LOCALIZAÇÃO
+// ══════════════════════════════════════════════
+function testGPS(){
+  setDesc('Testando GPS e módulo de localização do dispositivo.');
+  if(!navigator.geolocation){
+    setZone(`<div class="big-icon">📍</div><p style="color:var(--fail);font-size:13px;text-align:center">GPS / Geolocation não disponível.</p>`);
+    showVerdict();return;
+  }
+  setZone(`<div class="big-icon">📍</div><button class="btn-action" onclick="doGPS()">Obter Localização</button><div id="gpsSt" style="font-size:12px;color:var(--muted);text-align:center">Aguardando permissão...</div>`);
+  showVerdict(`<div class="verdict-row"><button class="btn-pass" onclick="record('pass','GPS funcional')">✅ GPS OK</button><button class="btn-fail" onclick="record('fail','GPS com problema')">❌ Falhou</button></div>`);
+}
+function doGPS(){
+  const st=document.getElementById('gpsSt');
+  const zone=document.getElementById('zone');
+  if(st)st.innerHTML='<span class="status-dot active"></span> Buscando sinal GPS...';
+  const t0=Date.now();
+  navigator.geolocation.getCurrentPosition(pos=>{
+    const elapsed=((Date.now()-t0)/1000).toFixed(1);
+    const {latitude:lat,longitude:lon,accuracy:acc,altitude:alt,speed:spd}=pos.coords;
+    if(zone)zone.innerHTML=`
+      <div class="info-grid" style="width:100%">
+        <div class="info-card"><div class="info-card-label">Latitude</div><div class="info-card-value" style="font-size:13px">${lat.toFixed(5)}°</div></div>
+        <div class="info-card"><div class="info-card-label">Longitude</div><div class="info-card-value" style="font-size:13px">${lon.toFixed(5)}°</div></div>
+        <div class="info-card"><div class="info-card-label">Precisão</div><div class="info-card-value" style="font-size:14px;color:${acc<30?'var(--pass)':acc<100?'var(--warn)':'var(--fail)'}">${Math.round(acc)}m</div></div>
+        <div class="info-card"><div class="info-card-label">Altitude</div><div class="info-card-value" style="font-size:13px">${alt!=null?Math.round(alt)+'m':'—'}</div></div>
+        <div class="info-card"><div class="info-card-label">Velocidade</div><div class="info-card-value" style="font-size:13px">${spd!=null?Math.round(spd*3.6)+' km/h':'—'}</div></div>
+        <div class="info-card"><div class="info-card-label">Tempo fix</div><div class="info-card-value" style="font-size:13px">${elapsed}s</div></div>
+      </div>
+      <div style="font-size:10px;color:var(--muted);text-align:center">✅ Sinal GPS obtido. Precisão de ${Math.round(acc)}m.</div>
+    `;
+    results['gps']={status:acc<100?'pass':'warn',detail:`GPS: ${lat.toFixed(4)},${lon.toFixed(4)} ±${Math.round(acc)}m`,label:'GPS / Localização',emoji:'📍',category:'Sensores'};
+  },err=>{
+    if(zone)zone.innerHTML=`<p style="color:var(--fail);font-size:13px;text-align:center">Erro GPS: ${err.message}</p>`;
+  },{enableHighAccuracy:true,timeout:15000,maximumAge:0});
+}
+
+// ══════════════════════════════════════════════
+// ACELERÔMETRO / GIROSCÓPIO
+// ══════════════════════════════════════════════
+let motionListener=null;
+let orientListener=null;
+function testMotion(){
+  setDesc('Mova e gire o telefone para testar acelerômetro e giroscópio.');
+  setZone(`
+    <div class="big-icon">🔄</div>
+    <button class="btn-action" id="motBtn" onclick="startMotion()">Iniciar Sensores</button>
+    <div id="motSt" style="font-size:12px;color:var(--muted);text-align:center">Pressione para ativar</div>
+    <div id="motData" style="width:100%"></div>
+  `);
+  showVerdict(`<div class="verdict-row"><button class="btn-pass" onclick="record('pass','Acelerômetro e giroscópio OK')">✅ Sensores OK</button><button class="btn-fail" onclick="record('fail','sensor com problema')">❌ Falhou</button></div>`);
+}
+async function startMotion(){
+  const btn=document.getElementById('motBtn');
+  const st=document.getElementById('motSt');
+  if(btn)btn.disabled=true;
+  // iOS 13+ precisa de permissão
+  if(typeof DeviceMotionEvent!=='undefined'&&typeof DeviceMotionEvent.requestPermission==='function'){
+    try{const r=await DeviceMotionEvent.requestPermission();if(r!=='granted'){if(st)st.textContent='Permissão negada.';return;}}catch(e){}
+  }
+  if(typeof DeviceOrientationEvent!=='undefined'&&typeof DeviceOrientationEvent.requestPermission==='function'){
+    try{await DeviceOrientationEvent.requestPermission();}catch(e){}
+  }
+  if(st)st.innerHTML='<span class="status-dot active"></span> Lendo sensores...';
+  let accOK=false,gyroOK=false;
+  motionListener=e=>{
+    accOK=true;
+    const ax=e.accelerationIncludingGravity;
+    const rr=e.rotationRate;
+    if(rr&&(rr.alpha||rr.beta||rr.gamma))gyroOK=true;
+    const d=document.getElementById('motData');
+    if(d)d.innerHTML=`
+      <div class="info-grid" style="width:100%;margin-top:8px">
+        <div class="info-card"><div class="info-card-label">Accel X</div><div class="info-card-value" style="font-size:13px">${ax?(ax.x||0).toFixed(2):'—'}</div></div>
+        <div class="info-card"><div class="info-card-label">Accel Y</div><div class="info-card-value" style="font-size:13px">${ax?(ax.y||0).toFixed(2):'—'}</div></div>
+        <div class="info-card"><div class="info-card-label">Accel Z</div><div class="info-card-value" style="font-size:13px">${ax?(ax.z||0).toFixed(2):'—'}</div></div>
+        <div class="info-card"><div class="info-card-label">Giroscópio</div><div class="info-card-value" style="font-size:12px;color:${gyroOK?'var(--pass)':'var(--muted)'}">${gyroOK?'✅ OK':'—'}</div></div>
+      </div>`;
+  };
+  orientListener=e=>{
+    const d=document.getElementById('motData');
+    if(d){
+      const extra=`<div class="info-card" style="grid-column:1/-1"><div class="info-card-label">Orientação (α/β/γ)</div><div class="info-card-value" style="font-size:12px">${(e.alpha||0).toFixed(1)}° / ${(e.beta||0).toFixed(1)}° / ${(e.gamma||0).toFixed(1)}°</div></div>`;
+      if(!d.querySelector('.orient-row'))d.insertAdjacentHTML('beforeend',`<div class="orient-row" style="width:100%;display:grid;grid-template-columns:1fr;gap:8px;margin-top:4px">${extra}</div>`);
+    }
+  };
+  window.addEventListener('devicemotion',motionListener);
+  window.addEventListener('deviceorientation',orientListener);
+  setTimeout(()=>{
+    const s=document.getElementById('motSt');
+    if(s)s.textContent=accOK?'✅ Acelerômetro detectado!'+(gyroOK?' + Giroscópio OK':''):'⚠️ Nenhum dado de sensor recebido.';
+  },2500);
+}
+
+// ══════════════════════════════════════════════
+// VIBRAÇÃO
+// ══════════════════════════════════════════════
+function testVibration(){
+  setDesc('Testa o motor de vibração do dispositivo.');
+  if(!navigator.vibrate){
+    setZone(`<div class="big-icon">📳</div><p style="color:var(--warn);font-size:13px;text-align:center">API de vibração não disponível neste browser/dispositivo.</p>`);
+    showVerdict(`<div class="verdict-row"><button class="btn-pass" onclick="record('warn','Vibration API indisponível')">⚠️ Sem suporte</button><button class="btn-fail" onclick="record('fail','vibração com problema')">❌ Falhou</button></div>`);
+    return;
+  }
+  setZone(`
+    <div class="big-icon">📳</div>
+    <button class="btn-action" onclick="doVibrate([200,100,200])" style="margin-bottom:8px">📳 Vibrar curto (2x)</button>
+    <button class="btn-action" onclick="doVibrate([500])" style="background:var(--bg3);border:1px solid var(--border);color:var(--text)">📳 Vibrar longo (1x)</button>
+    <button class="btn-action" onclick="doVibrate([100,50,100,50,100,50,100])" style="background:rgba(0,180,255,.1);border:1px solid rgba(0,180,255,.3);color:var(--accent2)">📳 Padrão SOS</button>
+    <div id="vibSt" style="font-size:12px;color:var(--muted);text-align:center">Toque para sentir a vibração</div>
+  `);
+  showVerdict(`<div class="verdict-row"><button class="btn-pass" onclick="record('pass','Motor de vibração funcional')">✅ Vibrou OK</button><button class="btn-fail" onclick="record('fail','sem vibração')">❌ Não vibrou</button></div>`);
+}
+function doVibrate(pattern){
+  navigator.vibrate(pattern);
+  const st=document.getElementById('vibSt');
+  if(st){st.innerHTML='<span class="status-dot active"></span> Vibrando...';setTimeout(()=>{st.textContent='Você sentiu a vibração?';},600);}
+}
+
+// ══════════════════════════════════════════════
+// PIXELS MORTOS — tela cheia colorida
+// ══════════════════════════════════════════════
+let pixelPhase=0;
+const PIXEL_COLORS=['#000000','#ffffff','#ff0000','#00ff00','#0000ff'];
+const PIXEL_NAMES=['Preto','Branco','Vermelho','Verde','Azul'];
+let pixelOverlay=null;
+function testPixels(){
+  setDesc('Verifica pixels mortos. A tela ficará cheia de cores sólidas — procure por pontos ou manchas anômalos.');
+  setZone(`
+    <div class="big-icon">🖥️</div>
+    <button class="btn-action" onclick="startPixelTest()">Iniciar Teste Full-Screen</button>
+    <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:8px">Toque para trocar de cor. 5 cores no total.</div>
+  `);
+  showVerdict(`<div class="verdict-row"><button class="btn-pass" onclick="record('pass','Sem pixels mortos detectados')">✅ Tela OK</button><button class="btn-fail" onclick="record('fail','pixels mortos ou manchas encontrados')">❌ Com defeito</button></div>`);
+}
+function startPixelTest(){
+  pixelPhase=0;
+  pixelOverlay=document.createElement('div');
+  Object.assign(pixelOverlay.style,{position:'fixed',inset:'0',zIndex:'999',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',gap:'12px',transition:'background .3s'});
+  pixelOverlay.innerHTML=`<div id="pxLabel" style="font-size:14px;font-family:monospace;padding:8px 16px;background:rgba(0,0,0,.5);color:#fff;border-radius:4px;pointer-events:none">Toque para próxima cor (1/5)</div>`;
+  pixelOverlay.onclick=nextPixelColor;
+  document.body.appendChild(pixelOverlay);
+  nextPixelColor();
+}
+function nextPixelColor(){
+  if(!pixelOverlay)return;
+  const col=PIXEL_COLORS[pixelPhase];
+  pixelOverlay.style.background=col;
+  const lbl=pixelOverlay.querySelector('#pxLabel');
+  const textCol=pixelPhase===0?'#888':pixelPhase===1?'#333':'#fff';
+  if(lbl){lbl.style.color=textCol;lbl.textContent=pixelPhase<PIXEL_COLORS.length-1?`Toque → próxima (${pixelPhase+1}/${PIXEL_COLORS.length}) — ${PIXEL_NAMES[pixelPhase]}`:`Toque para sair — ${PIXEL_NAMES[pixelPhase]}`;}
+  pixelPhase++;
+  if(pixelPhase>PIXEL_COLORS.length){document.body.removeChild(pixelOverlay);pixelOverlay=null;toast('Teste de pixels concluído!');}
+}
+
+// ══════════════════════════════════════════════
+// PDF EXPORT — estilizado com logo Legacy
+// ══════════════════════════════════════════════
+const LOGO_B64='data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNjAAAA8AAAACRyWFlaAAABFAAAABRnWFlaAAABKAAAABRiWFlaAAABPAAAABR3dHB0AAABUAAAABRyVFJDAAABZAAAAChnVFJDAAABZAAAAChiVFJDAAABZAAAAChjcHJ0AAABjAAAADxtbHVjAAAAAAAAAAEAAAAMZW5VUwAAAAgAAAAcAHMAUgBHAEJYWVogAAAAAAAAb6IAADj1AAADkFhZWiAAAAAAAABimQAAt4UAABjaWFlaIAAAAAAAACSgAAAPhAAAts9YWVogAAAAAAAA9tYAAQAAAADTLXBhcmEAAAAAAAQAAAACZmYAAPKnAAANWQAAE9AAAApbAAAAAAAAAABtbHVjAAAAAAAAAAEAAAAMZW5VUwAAACAAAAAcAEcAbwBvAGcAbABlACAASQBuAGMALgAgADIAMAAxADb/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8LCwkMEQ8SEhEPERETFhwXExQaFRERGCEYGh0dHx8fExciJCIeJBweHx4=';
+
+async function exportPDF(){
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+  const W=210,margin=18;
+  const all=Object.values(results);
+  const passed=all.filter(r=>r.status==='pass'||r.status==='warn').length;
+  const failed=all.filter(r=>r.status==='fail').length;
+  const skipped=all.filter(r=>r.status==='skip').length;
+  const pct=passed+failed>0?Math.round((all.filter(r=>r.status==='pass').length)/(all.filter(r=>r.status==='pass'||r.status==='fail').length)*100):0;
+  const now=new Date().toLocaleString('pt-BR');
+
+  // ── Cabeçalho
+  doc.setFillColor(8,12,16);
+  doc.rect(0,0,W,42,'F');
+  // Logo Legacy
+  try{doc.addImage(LOGO_B64,'JPEG',margin,6,52,22);}catch(e){}
+  // Título à direita
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(18);doc.setTextColor(0,229,160);
+  doc.text('PhoneDiag',W-margin,16,'right');
+  doc.setFontSize(9);doc.setTextColor(90,122,154);
+  doc.text('Diagnóstico de Hardware',W-margin,22,'right');
+  doc.setFontSize(8);doc.setTextColor(90,122,154);
+  doc.text(now,W-margin,28,'right');
+
+  // ── Score
+  let scoreColor=pct>=80?[0,229,160]:pct>=50?[255,170,0]:[255,59,92];
+  doc.setFillColor(...scoreColor);
+  doc.roundedRect(margin,50,W-margin*2,26,4,4,'F');
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(22);doc.setTextColor(8,12,16);
+  doc.text(pct+'%',W/2,62,'center');
+  doc.setFontSize(9);
+  doc.text(`✓ ${passed} OK   ✗ ${failed} Falhou   – ${skipped} Pulado`,W/2,71,'center');
+
+  // ── Linha de info
+  let y=87;
+  doc.setFontSize(8);doc.setTextColor(90,122,154);
+  doc.text('Device: '+navigator.userAgent.substring(0,80),margin,y);
+  y+=5;
+  doc.text(`Câmeras: ${devInfo.cameras.length}  |  Mics: ${devInfo.mics.length}`,margin,y);
+  y+=8;
+
+  // ── Linha separadora
+  doc.setDrawColor(30,45,61);doc.setLineWidth(0.4);
+  doc.line(margin,y,W-margin,y);y+=6;
+
+  // ── Resultados por categoria
+  const cats=[...new Set(all.map(r=>r.category))];
+  doc.setFont('helvetica','bold');
+  cats.forEach(cat=>{
+    if(y>265){doc.addPage();y=20;}
+    // Categoria
+    doc.setFillColor(18,24,32);
+    doc.rect(margin,y-4,W-margin*2,8,'F');
+    doc.setFontSize(8);doc.setTextColor(0,180,255);
+    doc.text(cat.toUpperCase(),margin+2,y+1);
+    y+=8;
+    // Itens
+    all.filter(r=>r.category===cat).forEach(r=>{
+      if(y>268){doc.addPage();y=20;}
+      const sc={pass:[0,229,160],fail:[255,59,92],skip:[90,122,154],warn:[255,170,0]};
+      const [cr,cg,cb]=sc[r.status]||sc.skip;
+      // Barra colorida à esquerda
+      doc.setFillColor(cr,cg,cb);
+      doc.rect(margin,y-3,2,7,'F');
+      doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(232,240,254);
+      doc.text(r.emoji+' '+r.label,margin+5,y+1);
+      doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(90,122,154);
+      const det=(r.detail||'—').substring(0,70);
+      doc.text(det,margin+5,y+5);
+      // Badge
+      const badge={pass:'OK',fail:'FALHOU',skip:'PULADO',warn:'PARCIAL'}[r.status]||'—';
+      doc.setFont('helvetica','bold');doc.setFontSize(7);doc.setTextColor(cr,cg,cb);
+      doc.text(badge,W-margin,y+1,'right');
+      // Linha separadora leve
+      doc.setDrawColor(20,30,40);doc.setLineWidth(0.2);
+      doc.line(margin+5,y+7,W-margin,y+7);
+      y+=10;
+    });
+    y+=3;
+  });
+
+  // ── Rodapé
+  const pages=doc.getNumberOfPages();
+  for(let i=1;i<=pages;i++){
+    doc.setPage(i);
+    doc.setFillColor(8,12,16);
+    doc.rect(0,285,W,12,'F');
+    doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(90,122,154);
+    doc.text('PhoneDiag — Legacy',margin,291);
+    doc.text('Página '+i+'/'+pages,W-margin,291,'right');
+    doc.text('Diagnóstico gerado em '+now,W/2,291,'center');
+  }
+
+  doc.save('phonediag_legacy_'+Date.now()+'.pdf');
+  toast('PDF exportado com sucesso!');
+}
+
+
 function exportReport(){
   const all=Object.values(results);
   const now=new Date().toLocaleString('pt-BR');
